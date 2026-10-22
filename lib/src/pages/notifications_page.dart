@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vrchat_dart/vrchat_dart.dart';
 
 import '../models/app_notification.dart';
 import '../models/friend_presence.dart';
@@ -10,11 +9,48 @@ import 'world_detail_page.dart';
 import '../providers/friends_provider.dart';
 import '../theme.dart';
 
-class NotificationsPage extends ConsumerWidget {
+/// 通知分类。
+enum _NoticeFilter {
+  all('全部'),
+  friendRequest('好友申请'),
+  invite('邀请'),
+  requestInvite('请求加入'),
+  boop('boop'),
+  other('其他');
+
+  const _NoticeFilter(this.label);
+
+  final String label;
+
+  bool matches(AppNotification item) {
+    final t = item.lowerType;
+    return switch (this) {
+      _NoticeFilter.all => true,
+      _NoticeFilter.friendRequest => t.contains('friendrequest'),
+      _NoticeFilter.invite => t == 'invite',
+      _NoticeFilter.requestInvite => t.contains('requestinvite'),
+      _NoticeFilter.boop => t.contains('boop'),
+      _NoticeFilter.other =>
+        !t.contains('friendrequest') &&
+            t != 'invite' &&
+            !t.contains('requestinvite') &&
+            !t.contains('boop'),
+    };
+  }
+}
+
+class NotificationsPage extends ConsumerStatefulWidget {
   const NotificationsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationsPage> createState() => _NotificationsPageState();
+}
+
+class _NotificationsPageState extends ConsumerState<NotificationsPage> {
+  _NoticeFilter _filter = _NoticeFilter.all;
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(notificationsProvider);
 
     return Scaffold(
@@ -32,64 +68,166 @@ class NotificationsPage extends ConsumerWidget {
           ),
         ),
         data: (items) {
-          if (items.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.notifications_none,
-                    size: 40,
-                    color: Colors.white.withValues(alpha: 0.15),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '暂时没有通知',
-                    style: TextStyle(
-                      fontSize: AppText.caption,
-                      color: Colors.white.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  // 临时诊断：接口返回条数 / 解析失败数（release 包里看不到日志）
-                  if (NotificationParseStats.total > 0 ||
-                      NotificationParseStats.failed > 0) ...[
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Text(
-                        '接口返回 ${NotificationParseStats.total} 条'
-                        '${NotificationParseStats.failed > 0 ? " · 解析失败 ${NotificationParseStats.failed}" : ""}'
-                        '${NotificationParseStats.lastError != null ? "\n${NotificationParseStats.lastError}" : ""}',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: AppText.label,
-                          height: 1.5,
-                          color: Colors.white.withValues(alpha: 0.25),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          }
-
           final sorted = [...items]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          final visible = sorted.where(_filter.matches).toList();
 
-          return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(notificationsProvider),
-            child: ListView.separated(
-              padding: const EdgeInsets.only(bottom: 24),
-              itemCount: sorted.length,
-              separatorBuilder: (_, _) => Divider(
-                height: 1,
-                indent: 62,
-                color: Colors.white.withValues(alpha: 0.05),
+          return Column(
+            children: [
+              _FilterBar(
+                selected: _filter,
+                onSelected: (f) => setState(() => _filter = f),
               ),
-              itemBuilder: (context, i) => _NotificationRow(item: sorted[i]),
+              Expanded(
+                child: items.isEmpty
+                    ? _EmptyNotifications()
+                    : (visible.isEmpty
+                        ? const _EmptyCategory()
+                        : RefreshIndicator(
+                            onRefresh: () async =>
+                                ref.invalidate(notificationsProvider),
+                            child: ListView.separated(
+                              padding: const EdgeInsets.only(bottom: 24),
+                              itemCount: visible.length,
+                              separatorBuilder: (_, _) => Divider(
+                                height: 1,
+                                indent: 62,
+                                color: Colors.white.withValues(alpha: 0.05),
+                              ),
+                              itemBuilder: (context, i) =>
+                                  _NotificationRow(item: visible[i]),
+                            ),
+                          )),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _FilterBar extends StatelessWidget {
+  const _FilterBar({required this.selected, required this.onSelected});
+
+  final _NoticeFilter selected;
+  final ValueChanged<_NoticeFilter> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        itemCount: _NoticeFilter.values.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final filter = _NoticeFilter.values[i];
+          final active = filter == selected;
+          return GestureDetector(
+            onTap: () => onSelected(filter),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: active
+                    ? AppTheme.accent.withValues(alpha: 0.16)
+                    : Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(AppRadius.sheet),
+                border: Border.all(
+                  color: active
+                      ? AppTheme.accent.withValues(alpha: 0.5)
+                      : Colors.transparent,
+                ),
+              ),
+              child: Text(
+                filter.label,
+                style: TextStyle(
+                  fontSize: AppText.caption,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                  color: active
+                      ? AppTheme.accent
+                      : Colors.white.withValues(alpha: 0.5),
+                ),
+              ),
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _EmptyNotifications extends StatelessWidget {
+  const _EmptyNotifications();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.notifications_none,
+            size: 40,
+            color: Colors.white.withValues(alpha: 0.15),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '暂时没有通知',
+            style: TextStyle(
+              fontSize: AppText.caption,
+              color: Colors.white.withValues(alpha: 0.4),
+            ),
+          ),
+          // 临时诊断：接口返回条数 / 解析失败数（release 包里看不到日志）
+          if (NotificationParseStats.total > 0 ||
+              NotificationParseStats.failed > 0) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                '接口返回 ${NotificationParseStats.total} 条'
+                '${NotificationParseStats.failed > 0 ? " · 解析失败 ${NotificationParseStats.failed}" : ""}'
+                '${NotificationParseStats.lastError != null ? "\n${NotificationParseStats.lastError}" : ""}',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: AppText.label,
+                  height: 1.5,
+                  color: Colors.white.withValues(alpha: 0.25),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyCategory extends StatelessWidget {
+  const _EmptyCategory();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.filter_alt_off_outlined,
+            size: 36,
+            color: Colors.white.withValues(alpha: 0.15),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '这个分类还没有通知',
+            style: TextStyle(
+              fontSize: AppText.caption,
+              color: Colors.white.withValues(alpha: 0.4),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -275,30 +413,6 @@ class _NotificationRowState extends ConsumerState<_NotificationRow> {
     );
   }
 
-  Future<void> _respond(String type, String data, String okText) async {
-    setState(() => _busy = true);
-    final client = ref.read(vrcClientProvider);
-    // 好友申请用专用接口，其余走通用 respond。
-    final isFriendRequest =
-        widget.item.lowerType.contains('friendrequest') &&
-            type.toLowerCase().contains('accept');
-    final err = isFriendRequest
-        ? await client.acceptFriendRequest(widget.item.id)
-        : await client.respondNotification(
-            notificationId: widget.item.id,
-            responseType: type,
-            responseData: data,
-          );
-    if (!mounted) return;
-    setState(() => _busy = false);
-    if (err == null) {
-      ref.invalidate(notificationsProvider);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(okText)));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
@@ -314,9 +428,6 @@ class _NotificationRowState extends ConsumerState<_NotificationRow> {
             .watch(worldResolveProvider((id: item.worldId, name: item.worldName)))
             .valueOrNull
         : null;
-    final responses = isFriendRequest ? item.acceptReject : (accept: null, reject: null);
-    final accept = responses.accept;
-    final reject = responses.reject;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -380,7 +491,7 @@ class _NotificationRowState extends ConsumerState<_NotificationRow> {
                     ),
                   ),
                 ],
-                if ((item.senderUsername ?? '').isNotEmpty || item.imageUrl != null) ...[
+                if (item.senderUsername.isNotEmpty || item.imageUrl != null) ...[
                   const SizedBox(height: 6),
                   Row(
                     children: [
@@ -396,7 +507,7 @@ class _NotificationRowState extends ConsumerState<_NotificationRow> {
                             errorWidget: (_, _, _) => const SizedBox.shrink(),
                           ),
                         ),
-                      if ((item.senderUsername ?? '').isNotEmpty)
+                      if (item.senderUsername.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(left: 8),
                           child: Text(

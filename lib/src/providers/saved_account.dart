@@ -126,6 +126,116 @@ final savedAccountProvider =
 );
 
 // ---------------------------------------------------------------------------
+// 已登录过的账号列表（多账号切换用）
+// ---------------------------------------------------------------------------
+
+/// 保存多个登录过的账号。旧的单账号文件会在第一次加载时自动迁移过来。
+class SavedAccountsController extends Notifier<List<SavedAccount>> {
+  File? _file;
+  bool _loaded = false;
+
+  @override
+  List<SavedAccount> build() {
+    _load();
+    return const [];
+  }
+
+  Future<File?> _ensureFile() async {
+    if (_file != null) return _file;
+    try {
+      final dir = await getApplicationSupportDirectory();
+      _file = File('${dir.path}${Platform.pathSeparator}saved_accounts.json');
+      return _file;
+    } catch (e) {
+      debugPrint('定位账号列表文件失败: $e');
+      return null;
+    }
+  }
+
+  Future<void> _load() async {
+    if (_loaded) return;
+    _loaded = true;
+    try {
+      final file = await _ensureFile();
+      if (file != null && file.existsSync()) {
+        final data = jsonDecode(await file.readAsString());
+        if (data is List) {
+          state = data
+              .whereType<Map>()
+              .map((e) => SavedAccount.fromJson(Map<String, dynamic>.from(e)))
+              .whereType<SavedAccount>()
+              .toList();
+          return;
+        }
+      }
+      await _migrateLegacy();
+    } catch (e) {
+      debugPrint('读取账号列表失败（忽略）: $e');
+    }
+  }
+
+  /// 旧版本只存了一个 `saved_account.json`，这里把它并进列表。
+  Future<void> _migrateLegacy() async {
+    try {
+      final dir = await getApplicationSupportDirectory();
+      final legacy = File('${dir.path}${Platform.pathSeparator}saved_account.json');
+      if (!legacy.existsSync()) return;
+      final data = jsonDecode(await legacy.readAsString());
+      if (data is! Map) return;
+      final account = SavedAccount.fromJson(Map<String, dynamic>.from(data));
+      if (account == null) return;
+      state = [account];
+      await _write();
+    } catch (e) {
+      debugPrint('迁移旧账号失败（忽略）: $e');
+    }
+  }
+
+  Future<void> _write() async {
+    try {
+      final file = await _ensureFile();
+      await file?.writeAsString(
+        jsonEncode(state.map((e) => e.toJson()).toList()),
+        flush: true,
+      );
+    } catch (e) {
+      debugPrint('写入账号列表失败（忽略）: $e');
+    }
+  }
+
+  /// 登录成功后调用：同一个 userId 会更新到最前，不重复。
+  Future<void> upsert(SavedAccount account) async {
+    state = [
+      account,
+      ...state.where((e) => e.userId != account.userId),
+    ];
+    await _write();
+  }
+
+  Future<void> remove(String userId) async {
+    state = state.where((e) => e.userId != userId).toList();
+    await _write();
+  }
+
+  Future<void> clear() async {
+    state = const [];
+    try {
+      final file = await _ensureFile();
+      if (file != null && file.existsSync()) {
+        await file.delete();
+      }
+    } catch (e) {
+      debugPrint('清空账号列表失败（忽略）: $e');
+    }
+  }
+}
+
+final savedAccountsProvider =
+    NotifierProvider<SavedAccountsController, List<SavedAccount>>(
+  SavedAccountsController.new,
+);
+
+// ---------------------------------------------------------------------------
 // 记住的密码（可选）
 // ---------------------------------------------------------------------------
 

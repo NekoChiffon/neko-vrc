@@ -1,9 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_info.dart';
 import '../models/friend_presence.dart';
 import '../providers/friends_provider.dart';
+import '../providers/saved_account.dart';
+import '../services/friend_notifier.dart';
 import '../theme.dart';
 import 'cosmetics_picker_page.dart';
 import 'favorites_page.dart';
@@ -18,6 +21,10 @@ class SettingsPage extends ConsumerWidget {
     final auth = ref.watch(authProvider);
     final friends = ref.watch(friendsProvider);
     final me = auth is AuthSignedIn ? auth.user : null;
+    final accounts = ref.watch(savedAccountsProvider);
+    final otherAccounts = me == null
+        ? accounts
+        : accounts.where((a) => a.userId != me.id).toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text('设置')),
@@ -35,6 +42,22 @@ class SettingsPage extends ConsumerWidget {
                   value: '${me.status.value} · ${FriendPresence.trustRankFromTags(me.tags) ?? '—'}',
                 ),
               const SizedBox(height: 6),
+              if (otherAccounts.isNotEmpty) ...[
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      _showAccountSwitcher(context, ref, otherAccounts),
+                  icon: const Icon(Icons.swap_horiz, size: 18),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.accent,
+                    side: BorderSide(
+                      color: AppTheme.accent.withValues(alpha: 0.35),
+                    ),
+                    minimumSize: const Size.fromHeight(44),
+                  ),
+                  label: const Text('切换账号'),
+                ),
+                const SizedBox(height: 8),
+              ],
               OutlinedButton.icon(
                 onPressed: () => _confirmLogout(context, ref),
                 icon: const Icon(Icons.logout, size: 18),
@@ -44,6 +67,34 @@ class SettingsPage extends ConsumerWidget {
                   minimumSize: const Size.fromHeight(44),
                 ),
                 label: const Text('退出登录'),
+              ),
+            ],
+          ),
+
+          // ---- 提醒 ----
+          _Card(
+            title: '提醒',
+            children: [
+              ValueListenableBuilder<bool>(
+                valueListenable: FriendNotifier.instance.enabled,
+                builder: (context, enabled, _) => SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: enabled,
+                  onChanged: (v) => _toggleFriendNotify(context, v),
+                  title: const Text(
+                    '好友上线提醒',
+                    style: TextStyle(fontSize: AppText.secondary),
+                  ),
+                  subtitle: Text(
+                    '好友进入 VRChat 时弹一条系统通知。\n'
+                    '只在 App 运行时生效；Web 端上下线不提醒。',
+                    style: TextStyle(
+                      fontSize: AppText.label,
+                      height: 1.5,
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -150,6 +201,153 @@ class SettingsPage extends ConsumerWidget {
     );
   }
 
+  Future<void> _toggleFriendNotify(BuildContext context, bool value) async {
+    if (value) {
+      final granted = await FriendNotifier.instance.requestPermission();
+      if (!granted) {
+        if (context.mounted) {
+          _toast(context, '系统没有给通知权限，请到系统设置里手动允许');
+        }
+        return;
+      }
+    }
+    await FriendNotifier.instance.setEnabled(value);
+  }
+
+  /// 已保存的账号列表，点一下切换到那个账号。
+  ///
+  /// 只有当那个账号还留着密码（登录时勾了「记住密码」）才能无感切换，
+  /// 否则提示退出后手动登录。
+  Future<void> _showAccountSwitcher(
+    BuildContext context,
+    WidgetRef ref,
+    List<SavedAccount> accounts,
+  ) async {
+    final headers = ref.read(imageHeadersProvider);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(top: 10, bottom: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 4, 20, 8),
+              child: Row(
+                children: [
+                  Icon(Icons.swap_horiz, size: 16, color: AppTheme.accent),
+                  SizedBox(width: 8),
+                  Text(
+                    '切换到其他账号',
+                    style: TextStyle(
+                      fontSize: AppText.secondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            for (final account in accounts)
+              InkWell(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _switchAccount(context, ref, account);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      _AccountAvatar(account: account, headers: headers),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              account.displayName.isEmpty
+                                  ? '未命名账号'
+                                  : account.displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: AppText.body,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (account.username.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                account.username,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: AppText.label,
+                                  color: Colors.white.withValues(alpha: 0.35),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const Text(
+                        '切换',
+                        style: TextStyle(
+                          fontSize: AppText.caption,
+                          color: AppTheme.accent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _switchAccount(
+    BuildContext context,
+    WidgetRef ref,
+    SavedAccount account,
+  ) async {
+    if (account.username.isEmpty) {
+      _toast(context, '这个账号没有记录登录名，请退出后手动登录');
+      return;
+    }
+    final pwd = await SavedPassword.read(account.userId);
+    if (pwd == null) {
+      if (context.mounted) _toast(context, '没有保存这个账号的密码，请退出后手动登录');
+      return;
+    }
+    await ref.read(authProvider.notifier).signOut();
+    final err = await ref.read(authProvider.notifier).signIn(account.username, pwd);
+    if (err != null && context.mounted) {
+      _toast(context, '切换失败：$err');
+    }
+  }
+
+  void _toast(BuildContext context, String text) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  }
+
   Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -166,6 +364,40 @@ class SettingsPage extends ConsumerWidget {
       await ref.read(authProvider.notifier).signOut();
       if (context.mounted) Navigator.of(context).pop();
     }
+  }
+}
+
+class _AccountAvatar extends StatelessWidget {
+  const _AccountAvatar({required this.account, required this.headers});
+
+  final SavedAccount account;
+  final Map<String, String> headers;
+
+  static const double _size = 38;
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = Container(
+      width: _size,
+      height: _size,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppTheme.surfaceHigh,
+      ),
+      child: const Icon(Icons.person, size: 18, color: Colors.white24),
+    );
+
+    if (account.avatarUrl.isEmpty) return fallback;
+    return ClipOval(
+      child: CachedNetworkImage(
+        imageUrl: account.avatarUrl,
+        httpHeaders: headers,
+        width: _size,
+        height: _size,
+        fit: BoxFit.cover,
+        errorWidget: (_, _, _) => fallback,
+      ),
+    );
   }
 }
 

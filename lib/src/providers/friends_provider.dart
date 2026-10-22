@@ -5,6 +5,7 @@ import 'package:vrchat_dart/vrchat_dart.dart';
 import '../core/location_parser.dart';
 import '../core/vrc_client.dart';
 import '../models/friend_presence.dart';
+import '../services/friend_notifier.dart';
 import '../services/presence_tracker.dart';
 import 'discovery_provider.dart';
 import 'saved_account.dart';
@@ -86,11 +87,21 @@ class AuthController extends Notifier<AuthState> {
         if (user == null) return '登录成功但取不到账号信息';
         state = AuthSignedIn(user);
         ref.read(welcomePendingProvider.notifier).state = true;
+        final avatar = _avatarOf(user);
         ref.read(savedAccountProvider.notifier).save(
               userId: user.id,
               displayName: user.displayName,
-              avatarUrl: _avatarOf(user),
+              avatarUrl: avatar,
               username: username,
+            );
+        ref.read(savedAccountsProvider.notifier).upsert(
+              SavedAccount(
+                userId: user.id,
+                displayName: user.displayName,
+                avatarUrl: avatar,
+                savedAt: DateTime.now().toIso8601String(),
+                username: username,
+              ),
             );
         return null;
       case LoginStatus.needTwoFactor:
@@ -119,10 +130,20 @@ class AuthController extends Notifier<AuthState> {
       }
       return '验证通过但取不到账号信息';
     }
+    final pendingUsername = _pendingUsername ?? '';
     _pendingUsername = null;
     _pendingPassword = null;
     state = AuthSignedIn(user);
     ref.read(welcomePendingProvider.notifier).state = true;
+    ref.read(savedAccountsProvider.notifier).upsert(
+          SavedAccount(
+            userId: user.id,
+            displayName: user.displayName,
+            avatarUrl: _avatarOf(user),
+            savedAt: DateTime.now().toIso8601String(),
+            username: pendingUsername,
+          ),
+        );
     return null;
   }
 
@@ -451,6 +472,9 @@ class FriendsController extends Notifier<FriendsState> {
       if (old.isOnline != current.isOnline) {
         // Web 端上下线不记动态 —— 只有真的进/出游戏才提醒。
         if (current.isWebPlatform || old.isWebPlatform) continue;
+        if (current.isOnline) {
+          FriendNotifier.instance.notifyOnline(current.displayName);
+        }
         _tracker.record(
           PresenceEvent(
             at: at,
@@ -650,6 +674,7 @@ class FriendsController extends Notifier<FriendsState> {
         final since = _tracker.sinceFor(updated.userId, updated.groupKey);
         _byId[event.userId] = updated.copyWith(locationSince: since);
         if (!updated.isWebPlatform) {
+          FriendNotifier.instance.notifyOnline(updated.displayName);
           _tracker.record(
             PresenceEvent(
               at: DateTime.now(),
@@ -779,6 +804,17 @@ class FriendsController extends Notifier<FriendsState> {
     );
   }
 
+  /// 清空某一天的动态。
+  void clearEventsOfDay(DateTime day) {
+    _tracker.clearEventsOfDay(day);
+    state = FriendsState(
+      friends: state.friends,
+      lastSyncedAt: state.lastSyncedAt,
+      lastEventAt: state.lastEventAt,
+      loading: state.loading,
+    );
+  }
+
   String _friendly(Object e) {    final text = e.toString();
     if (text.contains('401')) return '登录已失效，请重新登录';
     if (text.contains('429')) return '请求太频繁，等一会儿再刷新';
@@ -809,6 +845,17 @@ final instanceOccupantsProvider =
           .read(vrcClientProvider)
           .fetchInstanceOccupants(worldId: key.worldId, instanceId: key.instanceId);
     });
+
+/// 好友备注（`/userNotes`）。只有本账号能看到，用来在好友列表里搜索。
+final friendNotesProvider = FutureProvider<Map<String, String>>((ref) async {
+  final client = ref.watch(vrcClientProvider);
+  final resp = await client.api.rawApi.getUsersApi().getUserNotes(n: 100);
+  final notes = resp.data ?? const <UserNote>[];
+  return {
+    for (final n in notes)
+      if (n.note.trim().isNotEmpty) n.targetUserId: n.note.trim(),
+  };
+});
 
 /// 用户详情（`/users/{id}` + `/profile/{id}` 合起来）。
 final userDetailProvider = FutureProvider.family<UserDetail, String>((ref, userId) {

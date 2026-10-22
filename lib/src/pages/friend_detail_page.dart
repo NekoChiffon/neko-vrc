@@ -186,6 +186,7 @@ class _FriendDetailPageState extends ConsumerState<FriendDetailPage> {
     if (!mounted) return;
     if (err == null) {
       ref.invalidate(userDetailProvider(userId));
+      ref.invalidate(friendNotesProvider);
       _toast(saved.trim().isEmpty ? '备注已清空' : '备注已保存');
     } else {
       _toast(err);

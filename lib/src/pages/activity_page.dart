@@ -35,6 +35,10 @@ final activityFilterProvider = StateProvider<ActivityFilter>(
   (ref) => ActivityFilter.all,
 );
 
+/// 只看某一个好友的动态。null 表示全部好友。
+final activityFriendFilterProvider =
+    StateProvider<({String userId, String displayName})?>((ref) => null);
+
 /// 好友动态时间线。
 ///
 /// 数据来源有两条：
@@ -50,9 +54,13 @@ class ActivityPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final all = ref.watch(presenceEventsProvider);
     final filter = ref.watch(activityFilterProvider);
-    final events = filter == ActivityFilter.all
+    final friendFilter = ref.watch(activityFriendFilterProvider);
+    final scoped = friendFilter == null
         ? all
-        : all.where((e) => filter.matches(e.kind)).toList();
+        : all.where((e) => e.userId == friendFilter.userId).toList();
+    final events = filter == ActivityFilter.all
+        ? scoped
+        : scoped.where((e) => filter.matches(e.kind)).toList();
     final friends = ref.watch(friendsProvider);
 
     Future<void> refresh() =>
@@ -74,6 +82,15 @@ class ActivityPage extends ConsumerWidget {
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
+          if (friendFilter != null)
+            SliverToBoxAdapter(
+              child: _FriendFilterBar(
+                name: friendFilter.displayName,
+                onClear: () => ref
+                    .read(activityFriendFilterProvider.notifier)
+                    .state = null,
+              ),
+            ),
           if (events.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
@@ -81,15 +98,23 @@ class ActivityPage extends ConsumerWidget {
                   ? _EmptyActivity(state: friends, onRefresh: refresh)
                   : _EmptyFilter(
                       filter: filter,
-                      onShowAll: () => ref
-                          .read(activityFilterProvider.notifier)
-                          .state = ActivityFilter.all,
+                      friendName: friendFilter?.displayName,
+                      onShowAll: () {
+                        ref.read(activityFilterProvider.notifier).state =
+                            ActivityFilter.all;
+                        ref.read(activityFriendFilterProvider.notifier).state =
+                            null;
+                      },
                     ),
             )
           else
             for (final day in days) ...[
               SliverToBoxAdapter(
-                child: _DayHeader(label: _dayLabel(day.value.first.at)),
+                child: _DayHeader(
+                  label: _dayLabel(day.value.first.at),
+                  onClear: () =>
+                      _confirmClearDay(context, ref, day.value.first.at),
+                ),
               ),
               SliverList(
                 delegate: SliverChildBuilderDelegate(
@@ -103,6 +128,33 @@ class ActivityPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmClearDay(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime day,
+  ) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('清空这一天的动态？'),
+        content: const Text('只删除这一天记录的好友动态，其他天不受影响。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('算了'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('清空'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      ref.read(friendsProvider.notifier).clearEventsOfDay(day);
+    }
   }
 
   static String _dayLabel(DateTime t) {
@@ -208,13 +260,24 @@ class _EmptyActivity extends StatelessWidget {
 
 /// 选了某个分类、但这一类还没有记录时的空状态。
 class _EmptyFilter extends StatelessWidget {
-  const _EmptyFilter({required this.filter, required this.onShowAll});
+  const _EmptyFilter({
+    required this.filter,
+    required this.onShowAll,
+    this.friendName,
+  });
 
   final ActivityFilter filter;
   final VoidCallback onShowAll;
+  final String? friendName;
 
   @override
   Widget build(BuildContext context) {
+    final who = friendName;
+    final headline = who == null
+        ? '「${filter.label}」还没有记录'
+        : '「$who」在「${filter.label}」里还没有记录';
+    final hint = who == null ? '其他分类里可能已经有动态，切换看看' : '试试看全部好友，或切换分类';
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(32, 16, 32, 48),
@@ -228,7 +291,7 @@ class _EmptyFilter extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              '「${filter.label}」还没有记录',
+              headline,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppText.secondary,
@@ -237,7 +300,7 @@ class _EmptyFilter extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '其他分类里可能已经有动态，切换看看',
+              hint,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppText.label,
@@ -343,22 +406,89 @@ class ActivityFilterButton extends ConsumerWidget {
   }
 }
 
+/// 只看某个好友时，顶部的一条提示。
+class _FriendFilterBar extends StatelessWidget {
+  const _FriendFilterBar({required this.name, required this.onClear});
+
+  final String name;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+      padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
+      decoration: BoxDecoration(
+        color: AppTheme.accent.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppRadius.field),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.person, size: 14, color: AppTheme.accent),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              '只看 $name',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: AppText.caption,
+                color: AppTheme.accent,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: onClear,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(0, 30),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              foregroundColor: Colors.white.withValues(alpha: 0.5),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('显示全部', style: TextStyle(fontSize: AppText.label)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DayHeader extends StatelessWidget {
-  const _DayHeader({required this.label});
+  const _DayHeader({required this.label, this.onClear});
 
   final String label;
+  final VoidCallback? onClear;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 6),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: AppText.caption,
-          fontWeight: FontWeight.w600,
-          color: Colors.white.withValues(alpha: 0.35),
-        ),
+      padding: const EdgeInsets.fromLTRB(16, 14, 8, 2),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: AppText.caption,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withValues(alpha: 0.35),
+            ),
+          ),
+          const Spacer(),
+          if (onClear != null)
+            TextButton(
+              onPressed: onClear,
+              style: TextButton.styleFrom(
+                minimumSize: const Size(0, 28),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                foregroundColor: Colors.white.withValues(alpha: 0.35),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                '清空',
+                style: TextStyle(fontSize: AppText.label),
+              ),
+            ),
+        ],
       ),
     );
   }

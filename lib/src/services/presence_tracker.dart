@@ -212,6 +212,17 @@ class PresenceTracker {
     _scheduleSave();
   }
 
+  /// 只清掉某一天（按本地日期）的动态。
+  void clearEventsOfDay(DateTime day) {
+    _events.removeWhere(
+      (e) =>
+          e.at.year == day.year &&
+          e.at.month == day.month &&
+          e.at.day == day.day,
+    );
+    _scheduleSave();
+  }
+
   /// 标记「和 [userId] 在同一个实例里」。
   ///
   /// 返回 true 表示这是刚进来（或换了实例）的第一次，应该记一条「相遇」；

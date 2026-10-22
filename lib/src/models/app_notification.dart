@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
-
 /// 一条通知的「宽容」模型。
 ///
 /// 不用 SDK 的 `NotificationV2`：它把 `details` 声明成强类型对象，
@@ -225,7 +223,6 @@ class AppNotificationResponse {
 }
 
 /// 调试用：统计解析失败的条数（release 包里 debugPrint 不输出，靠这个能在界面上看到）。
-@visibleForTesting
 class NotificationParseStats {
   static int total = 0;
   static int failed = 0;

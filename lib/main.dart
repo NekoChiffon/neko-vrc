@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 import 'src/core/vrc_client.dart';
 import 'src/providers/friends_provider.dart';
+import 'src/services/friend_notifier.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final client = await VrcClient.create();
+  await FriendNotifier.instance.init();
 
   runApp(
     ProviderScope(

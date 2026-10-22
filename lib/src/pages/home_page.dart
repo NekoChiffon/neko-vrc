@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -184,12 +185,25 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
                   : const Icon(Icons.refresh),
             ),
           ],
-          if (_index == 2 && ref.watch(presenceEventsProvider).isNotEmpty)
+          if (_index == 2) ...[
             IconButton(
-              tooltip: '清空动态',
-              onPressed: () => _confirmClearActivity(context, ref),
-              icon: const Icon(Icons.delete_outline),
+              tooltip: '只看某个好友',
+              onPressed: () => _showActivityFriendPicker(context, ref),
+              icon: const Icon(Icons.person_search_outlined),
             ),
+            if (ref.watch(presenceEventsProvider).isNotEmpty) ...[
+              IconButton(
+                tooltip: '导出动态',
+                onPressed: () => _exportActivity(context, ref),
+                icon: const Icon(Icons.ios_share),
+              ),
+              IconButton(
+                tooltip: '清空动态',
+                onPressed: () => _confirmClearActivity(context, ref),
+                icon: const Icon(Icons.delete_outline),
+              ),
+            ],
+          ],
           if (_index == 3 && me != null) ...[
             IconButton(
               tooltip: '设置',
@@ -241,6 +255,137 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
     if (i == 2) ref.read(friendsProvider.notifier).refresh(silent: true);
     // 切到「我」时刷新一次：所在世界和当前模型会跟着电脑端变化。
     if (i == 3) _refreshMeAndDetail();
+  }
+
+  /// 动态页「只看某个好友」：从已经出现过的好友里选一个。
+  void _showActivityFriendPicker(BuildContext context, WidgetRef ref) {
+    final events = ref.read(presenceEventsProvider);
+    final names = <String, String>{};
+    for (final e in events) {
+      names.putIfAbsent(e.userId, () => e.displayName);
+    }
+    if (names.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('还没有好友动态')),
+      );
+      return;
+    }
+
+    final entries = names.entries.toList()
+      ..sort(
+        (a, b) => a.value.toLowerCase().compareTo(b.value.toLowerCase()),
+      );
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(ctx).height * 0.6,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(top: 10, bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 4, 20, 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.person_search_outlined,
+                        size: 16, color: AppTheme.accent),
+                    SizedBox(width: 8),
+                    Text(
+                      '只看某个好友的动态',
+                      style: TextStyle(
+                        fontSize: AppText.secondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.groups_outlined, size: 20),
+                      title: const Text(
+                        '全部好友',
+                        style: TextStyle(fontSize: AppText.secondary),
+                      ),
+                      onTap: () {
+                        ref.read(activityFriendFilterProvider.notifier).state =
+                            null;
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                    for (final e in entries)
+                      ListTile(
+                        leading: const Icon(Icons.person_outline, size: 20),
+                        title: Text(
+                          e.value,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: AppText.secondary),
+                        ),
+                        onTap: () {
+                          ref
+                                  .read(activityFriendFilterProvider.notifier)
+                                  .state =
+                              (userId: e.key, displayName: e.value);
+                          Navigator.pop(ctx);
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 导出当前筛选下的动态：直接复制成 JSON 到剪贴板。
+  Future<void> _exportActivity(BuildContext context, WidgetRef ref) async {
+    final category = ref.read(activityFilterProvider);
+    final friend = ref.read(activityFriendFilterProvider);
+    var events = ref.read(presenceEventsProvider);
+    if (friend != null) {
+      events = events.where((e) => e.userId == friend.userId).toList();
+    }
+    if (category != ActivityFilter.all) {
+      events = events.where((e) => category.matches(e.kind)).toList();
+    }
+    if (events.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('当前筛选下没有可导出的动态')),
+      );
+      return;
+    }
+
+    final text = const JsonEncoder.withIndent('  ')
+        .convert([for (final e in events) e.toJson()]);
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已复制 ${events.length} 条动态（JSON）到剪贴板')),
+    );
   }
 
   Future<void> _confirmClearActivity(BuildContext context, WidgetRef ref) async {
@@ -457,10 +602,17 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
     super.dispose();
   }
 
-  List<FriendPresence> _apply(List<FriendPresence> all) {
+  List<FriendPresence> _apply(
+    List<FriendPresence> all,
+    Map<String, String> notes,
+  ) {
     final q = _search.text.trim().toLowerCase();
     return all.where((f) {
-      if (q.isNotEmpty && !f.displayName.toLowerCase().contains(q)) return false;
+      if (q.isNotEmpty) {
+        final name = f.displayName.toLowerCase();
+        final note = (notes[f.userId] ?? '').toLowerCase();
+        if (!name.contains(q) && !note.contains(q)) return false;
+      }
       return switch (_filter) {
         _FriendFilter.all => true,
         _FriendFilter.online => f.isOnline,
@@ -529,7 +681,10 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
     final favoriteMembers = favAsync?.valueOrNull;
     final favLoading = favAsync != null && favoriteMembers == null;
 
-    final byFilter = _apply(state.friends);
+    final byFilter = _apply(
+      state.friends,
+      ref.watch(friendNotesProvider).valueOrNull ?? const {},
+    );
     final filtered = favoriteMembers == null
         ? byFilter
         : byFilter.where((f) => favoriteMembers.contains(f.userId)).toList();

@@ -117,7 +117,7 @@ class WorldDetailPage extends ConsumerWidget {
                         ),
                         _Metric(
                           icon: Icons.local_fire_department_outlined,
-                          value: _compact(world.popularity ?? 0),
+                          value: _compact(world.popularity),
                           label: '热度',
                         ),
                         _Metric(
@@ -1311,13 +1311,8 @@ void _showMyRoomsHistory(BuildContext context, WidgetRef ref) {
                             final loc = e['loc'] ?? '';
                             final at = e['at'] ?? '';
                             final date = at.length >= 16
-                                ? at.substring(0, 4) +
-                                    '/' +
-                                    at.substring(5, 7) +
-                                    '/' +
-                                    at.substring(8, 10) +
-                                    ' ' +
-                                    at.substring(11, 16)
+                                ? '${at.substring(0, 4)}/${at.substring(5, 7)}/'
+                                      '${at.substring(8, 10)} ${at.substring(11, 16)}'
                                 : at;
                             final worldId = loc.split(':').first;
 
@@ -1784,7 +1779,7 @@ class _InstanceMembers extends ConsumerWidget {
         children: [
           for (final f in roomFriends.take(12))
             _MemberTile(
-              name: f.displayName ?? '',
+              name: f.displayName,
               avatar: f.avatarUrl ?? '',
               dot: f.statusColor,
               isOwner: f.userId == ownerId,
@@ -1859,72 +1854,6 @@ class _MemberTile extends ConsumerWidget {
                     ),
                   ),
                 ),
-              if (isOwner)
-                Positioned(
-                  left: -4,
-                  top: -4,
-                  child: Icon(
-                    Icons.workspace_premium,
-                    size: 14,
-                    color: const Color(0xFFFFC94D),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: AppText.label,
-              color: Colors.white.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 房间里的一个成员：头像 + 名字（房主带皇冠）。
-class _InstanceMember extends ConsumerWidget {
-  const _InstanceMember({required this.user, required this.ownerId});
-
-  final Map<String, dynamic> user;
-  final String ownerId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final id = (user['id'] ?? '').toString();
-    final name = (user['displayName'] ?? '').toString();
-    final icon = (user['iconUrl'] ?? user['currentAvatarThumbnailImageUrl'] ?? '')
-        .toString();
-    final isOwner = id.isNotEmpty && id == ownerId;
-
-    return SizedBox(
-      width: 64,
-      child: Column(
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              ClipOval(
-                child: SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: icon.isEmpty
-                      ? const ColoredBox(color: AppTheme.surfaceHigh)
-                      : CachedNetworkImage(
-                          imageUrl: icon,
-                          httpHeaders: ref.watch(imageHeadersProvider),
-                          fit: BoxFit.cover,
-                          errorWidget: (_, _, _) =>
-                              const ColoredBox(color: AppTheme.surfaceHigh),
-                        ),
-                ),
-              ),
               if (isOwner)
                 Positioned(
                   left: -4,

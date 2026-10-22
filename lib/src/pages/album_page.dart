@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/album_file.dart';
 import '../providers/discovery_provider.dart';
-import '../core/vrc_client.dart';
 import '../providers/friends_provider.dart';
 import '../theme.dart';
 import '../widgets/skeleton.dart';
@@ -38,35 +37,49 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
 
   final _picker = ImagePicker();
 
-  /// 选图 → 三步上传 → 刷新当前分类
+  /// 选图（支持多选）→ 逐张上传 → 刷新当前分类。
   Future<void> _upload() async {
     if (_uploading) return;
     try {
-      final picked = await _picker.pickImage(
-        source: ImageSource.gallery,
+      final picked = await _picker.pickMultiImage(
         imageQuality: 90,
         // VRChat 要求 <10MB、≥64x64，超过 2048 会被自动缩放 —— 我们提前缩好
         maxWidth: 2048,
         maxHeight: 2048,
       );
-      if (picked == null) return; // 用户取消
+      if (picked.isEmpty) return; // 用户取消
 
       setState(() => _uploading = true);
       _progress.value = 0;
-      final err = await ref.read(vrcClientProvider).uploadAlbumImage(
-            path: picked.path,
-            tag: _selected,
-            onSendProgress: (sent, total) {
-              if (total > 0) {
-                _progress.value = sent / total;
-              }
-            },
-          );
+      final client = ref.read(vrcClientProvider);
+      var done = 0;
+      String? firstError;
+
+      for (var i = 0; i < picked.length; i++) {
+        final err = await client.uploadAlbumImage(
+          path: picked[i].path,
+          tag: _selected,
+          onSendProgress: (sent, total) {
+            if (total > 0) {
+              // 进度按「已完成张数 + 当前这张的比例」折算成整体百分比。
+              _progress.value = (i + sent / total) / picked.length;
+            }
+          },
+        );
+        if (err == null) {
+          done++;
+        } else {
+          firstError ??= err;
+        }
+      }
+
       if (!mounted) return;
       ref.invalidate(albumFilesProvider(_selected));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(err ?? '上传完成，缩略图可能要等几秒才生成')),
-      );
+      final message = picked.length == 1
+          ? (firstError ?? '上传完成，缩略图可能要等几秒才生成')
+          : '已上传 $done/${picked.length} 张'
+              '${firstError == null ? '' : '（${firstError.split('\n').first}）'}';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -603,10 +616,9 @@ class _AlbumViewer extends ConsumerWidget {
 }
 
 class _GridSkeleton extends StatelessWidget {
-  const _GridSkeleton({required this.tag, this.round = false});
+  const _GridSkeleton({required this.tag});
 
   final String tag;
-  final bool round;
 
   @override
   Widget build(BuildContext context) {

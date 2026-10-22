@@ -789,7 +789,7 @@ class _Section extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              if (action != null) action!,
+              ?action,
             ],
           ),
           const SizedBox(height: 10),

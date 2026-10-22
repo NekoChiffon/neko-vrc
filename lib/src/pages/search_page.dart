@@ -8,6 +8,7 @@ import 'package:vrchat_dart/vrchat_dart.dart';
 import '../models/friend_presence.dart';
 import '../providers/discovery_provider.dart';
 import '../providers/friends_provider.dart';
+import '../services/search_history.dart';
 import '../theme.dart';
 import 'friend_detail_page.dart';
 import 'group_detail_page.dart';
@@ -27,6 +28,15 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Timer? _debounce;
   String _query = '';
   _Scope _scope = _Scope.users;
+  List<String> _recent = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    SearchHistory.load().then((items) {
+      if (mounted && items.isNotEmpty) setState(() => _recent = items);
+    });
+  }
 
   @override
   void dispose() {
@@ -42,8 +52,30 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     // 打字时别每敲一个字就打一次接口，VRChat 会不高兴。
     _debounce = Timer(const Duration(milliseconds: 450), () {
       if (!mounted) return;
-      setState(() => _query = value.trim());
+      final q = value.trim();
+      setState(() => _query = q);
+      _remember(q);
     });
+  }
+
+  /// 真正发起搜索时才写入历史，避免把每个中间输入都记下来。
+  Future<void> _remember(String q) async {
+    if (q.isEmpty) return;
+    final next = [q, ..._recent.where((e) => e != q)].take(SearchHistory.maxItems).toList();
+    if (mounted) setState(() => _recent = next);
+    await SearchHistory.save(next);
+  }
+
+  void _useRecent(String q) {
+    _controller.text = q;
+    _controller.selection = TextSelection.collapsed(offset: q.length);
+    setState(() => _query = q);
+    _remember(q);
+  }
+
+  Future<void> _clearRecent() async {
+    setState(() => _recent = const []);
+    await SearchHistory.clear();
   }
 
   @override
@@ -94,7 +126,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         const SizedBox(height: 8),
         Expanded(
           child: _query.isEmpty
-              ? const _Hint(icon: Icons.manage_search, text: '输入关键词开始搜索')
+              ? (_recent.isEmpty
+                  ? const _Hint(icon: Icons.manage_search, text: '输入关键词开始搜索')
+                  : _RecentSearches(
+                      items: _recent,
+                      onTap: _useRecent,
+                      onClear: _clearRecent,
+                    ))
               : switch (_scope) {
                   _Scope.users => _userResults(),
                   _Scope.worlds => _worldResults(),
@@ -494,6 +532,100 @@ class _Circle extends StatelessWidget {
         fit: BoxFit.cover,
         placeholder: (_, _) => fallback,
         errorWidget: (_, _, _) => fallback,
+      ),
+    );
+  }
+}
+
+/// 输入框为空时展示的最近搜索。
+class _RecentSearches extends StatelessWidget {
+  const _RecentSearches({
+    required this.items,
+    required this.onTap,
+    required this.onClear,
+  });
+
+  final List<String> items;
+  final ValueChanged<String> onTap;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Text(
+                  '最近搜索',
+                  style: TextStyle(
+                    fontSize: AppText.caption,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.45),
+                  ),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: onClear,
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(40, 28),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    foregroundColor: Colors.white.withValues(alpha: 0.4),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    '清空',
+                    style: TextStyle(fontSize: AppText.label),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final q in items)
+                  GestureDetector(
+                    onTap: () => onTap(q),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(AppRadius.sheet),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.history,
+                            size: 13,
+                            color: Colors.white.withValues(alpha: 0.3),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            q,
+                            style: TextStyle(
+                              fontSize: AppText.caption,
+                              color: Colors.white.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
