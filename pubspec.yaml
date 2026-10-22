@@ -1,7 +1,7 @@
 name: neko_vrc
 description: "Neko VRC — 查看 VRChat 好友与所在世界的第三方小工具"
 publish_to: 'none'
-version: 0.38.8+116
+version: 0.38.9+117
 
 environment:
   sdk: ^3.13.5

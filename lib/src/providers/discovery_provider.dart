@@ -29,6 +29,16 @@ final worldSearchProvider =
   return resp.data ?? const [];
 });
 
+/// 搜群组（`/groups?query=`）。
+final groupSearchProvider =
+    FutureProvider.family<List<LimitedGroup>, String>((ref, query) async {
+  final q = query.trim();
+  if (q.isEmpty) return const [];
+  final client = ref.watch(vrcClientProvider);
+  final resp = await client.api.rawApi.getGroupsApi().searchGroups(query: q, n: 40);
+  return resp.data ?? const [];
+});
+
 /// 我创建的世界，包含未公开的（`/worlds?user=me`）。
 final myCreatedWorldsProvider = FutureProvider<List<LimitedWorld>>((ref) async {
   final client = ref.watch(vrcClientProvider);

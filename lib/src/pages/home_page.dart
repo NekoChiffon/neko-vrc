@@ -549,8 +549,8 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           child: TextField(
             controller: _search,
-            autocorrect: false,
-            enableSuggestions: false,
+            // 别名/名字可能是中文，别关联想 —— 某些国产 ROM 会因此弹出安全键盘。
+            keyboardType: TextInputType.text,
             textInputAction: TextInputAction.search,
             onChanged: (_) => setState(() {}),
             style: const TextStyle(fontSize: AppText.secondary),
