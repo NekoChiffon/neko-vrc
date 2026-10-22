@@ -1,0 +1,45 @@
+name: neko_vrc
+description: "Neko VRC — 查看 VRChat 好友与所在世界的第三方小工具"
+publish_to: 'none'
+version: 0.38.8+116
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # VRChat 非官方 API 客户端（REST + Pipeline WebSocket）
+  vrchat_dart: ^5.0.0
+
+  # 状态管理
+  flutter_riverpod: ^2.6.1
+
+  # 本地缓存目录（存 authCookie）
+  path_provider: ^2.1.5
+
+  # 相册上传：从手机选图
+  image_picker: ^1.1.2
+
+  # 保存图片到系统相册（MediaStore，兼容 Android 13+）
+  gal: ^2.3.0
+
+  # 图片缓存 / 时间格式化
+  cached_network_image: ^3.4.1
+  intl: ^0.20.2
+  native_animated_image: ^0.3.4
+  http: ^1.6.0
+  dio: ^5.11.1
+  flutter_cache_manager: ^3.4.5
+  flutter_secure_storage: ^11.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Neko VRC 首次公开内测 · 横版</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #05080c; }
+  body {
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; padding: 24px;
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  }
+  .poster {
+    position: relative; width: 1920px; height: 1080px;
+    background: #0b0f14; overflow: hidden; border-radius: 22px;
+  }
+  .glow-1 {
+    position: absolute; width: 1300px; height: 1300px; left: -320px; top: -560px;
+    background: radial-gradient(circle, rgba(96,165,250,.20) 0%, transparent 62%);
+  }
+  .glow-2 {
+    position: absolute; width: 1100px; height: 1100px; right: -220px; bottom: -460px;
+    background: radial-gradient(circle, rgba(45,212,191,.14) 0%, transparent 60%);
+  }
+  .star { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.35); }
+  .s1 { left: 340px; top: 120px; } .s2 { left: 900px; top: 90px; width: 3px; height: 3px; }
+  .s3 { left: 1400px; top: 200px; opacity:.6; } .s4 { left: 200px; bottom: 160px; width: 4px; height: 4px; opacity:.5; }
+  .s5 { left: 860px; bottom: 90px; opacity:.4; } .s6 { right: 140px; top: 420px; width: 3px; height: 3px; opacity:.6; }
+
+  .inner { position: relative; height: 100%; display: flex; }
+
+  /* ---- 左列 ---- */
+  .left { width: 1060px; padding: 0 40px 0 110px; display: flex; flex-direction: column; justify-content: center; }
+  .brand { display: flex; align-items: center; gap: 26px; }
+  .logo {
+    width: 96px; height: 96px; border-radius: 27px;
+    background: linear-gradient(135deg, #60a5fa, #2dd4bf);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 50px; color: #0b0f14;
+    box-shadow: 0 12px 44px rgba(96,165,250,.45);
+  }
+  .brand-name { font-size: 50px; font-weight: 800; letter-spacing: 1px; color: #fff; }
+  .brand-slogan { font-size: 23px; color: rgba(255,255,255,.42); margin-top: 5px; letter-spacing: 2px; }
+
+  .beta-badge {
+    margin-top: 64px; display: inline-flex; align-items: center; gap: 15px;
+    padding: 14px 30px; border-radius: 999px; width: fit-content;
+    border: 1.5px solid rgba(96,165,250,.45);
+    background: rgba(96,165,250,.10);
+    font-size: 27px; font-weight: 700; letter-spacing: 6px; color: #93c5fd;
+  }
+  .beta-badge .dot { width: 11px; height: 11px; border-radius: 50%; background: #4ade80;
+    box-shadow: 0 0 14px #4ade80; }
+
+  h1.title { margin-top: 22px; font-size: 84px; line-height: 1.16; font-weight: 800; color: #fff; }
+  h1.title .accent {
+    background: linear-gradient(100deg, #60a5fa, #5eead4);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  
+    .feat { display: flex; align-items: center; gap: 18px; }
+      
+          .qr { display: flex; align-items: center; gap: 22px; }
+      
+  /* ---- 右列：绝对定位强制垂直居中 ---- */
+  .right { position: absolute; right: 96px; top: 50%; transform: translateY(-50%); }
+  .phone-halo {
+    position: absolute; width: 780px; height: 780px; border-radius: 50%;
+    left: 50%; top: 50%; transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(96,165,250,.16) 0%, rgba(45,212,191,.07) 45%, transparent 70%);
+  }
+  .phone {
+    position: relative; border-radius: 52px; padding: 14px;
+    background: linear-gradient(160deg, #2a3644, #131a22);
+    box-shadow: 0 46px 100px rgba(0,0,0,.66), 0 0 0 1.5px rgba(255,255,255,.09),
+                0 0 110px rgba(96,165,250,.18);
+  }
+  .screen {
+    width: 430px; height: 858px; border-radius: 42px; overflow: hidden;
+    background: #0d1219; border: 1px solid rgba(255,255,255,.05);
+    display: flex; flex-direction: column;
+  }
+  .statusbar {
+    display: flex; justify-content: space-between; padding: 13px 26px 8px;
+    font-size: 15px; color: rgba(255,255,255,.65); flex-shrink: 0;
+  }
+  .appbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 22px 10px; flex-shrink: 0;
+  }
+  .appbar .t { font-size: 25px; font-weight: 700; color: #fff; display: flex; align-items: baseline; gap: 12px; }
+  .appbar .n { font-size: 15px; color: rgba(255,255,255,.4); font-weight: 400; }
+  .appbar .icons { display: flex; gap: 14px; align-items: center; }
+  .appbar .ic { width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,.07); }
+  .appbar .odot { width: 12px; height: 12px; border-radius: 50%; background: #fb923c; }
+
+  .search {
+    margin: 4px 20px 12px; padding: 12px 17px; border-radius: 13px;
+    background: rgba(255,255,255,.055); font-size: 16px;
+    color: rgba(255,255,255,.32); display: flex; align-items: center; gap: 9px; flex-shrink: 0;
+  }
+  .chips { display: flex; gap: 8px; padding: 0 20px 12px; flex-shrink: 0; }
+  .chip {
+    padding: 6px 16px; border-radius: 999px; font-size: 14.5px;
+    color: rgba(255,255,255,.55); background: rgba(255,255,255,.06);
+  }
+  .chip.on { background: rgba(96,165,250,.17); color: #93c5fd; font-weight: 600; }
+
+  .group-h {
+    display: flex; align-items: center; gap: 9px;
+    padding: 10px 22px 8px; font-size: 14.5px; color: rgba(255,255,255,.42); flex-shrink: 0;
+  }
+  .group-h .type { color: #93c5fd; font-weight: 600; }
+
+  /* 好友行：彩色渐变横幅 */
+  .frow {
+    display: flex; align-items: center; gap: 13px;
+    margin: 0 16px 9px; padding: 11px 13px; border-radius: 14px;
+  }
+  .g1 { background: linear-gradient(100deg, #7c3aed 0%, #c026d3 55%, #f472b6 100%); }
+  .g2 { background: linear-gradient(100deg, #0369a1 0%, #0ea5e9 60%, #7dd3fc 100%); }
+  .g3 { background: linear-gradient(100deg, #6d28d9 0%, #8b5cf6 60%, #c4b5fd 100%); }
+  .g4 { background: linear-gradient(100deg, #0f766e 0%, #14b8a6 60%, #99f6e4 100%); }
+  .fava {
+    width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0; position: relative;
+    background: linear-gradient(135deg, rgba(255,255,255,.35), rgba(255,255,255,.15));
+    border: 2px solid rgba(255,255,255,.75);
+  }
+  .fava::after {
+    content: ""; position: absolute; right: -1px; bottom: 0;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #4ade80; border: 2.5px solid #0d1219;
+  }
+  .fname { font-size: 18px; font-weight: 700; }
+  .fstatus { font-size: 13px; margin-top: 4px; }
+
+  .bar {
+    display: inline-block; border-radius: 6px;
+    background: rgba(255,255,255,.62); height: 13px; vertical-align: middle;
+  }
+  .bar.dim { background: rgba(255,255,255,.45); height: 10px; }
+  .w70 { width: 70px; } .w95 { width: 95px; } .w55 { width: 55px; } .w40 { width: 40px; }
+
+  /* 底部导航 */
+  .tabbar {
+    margin-top: auto; display: flex; flex-shrink: 0;
+    border-top: 1px solid rgba(255,255,255,.06);
+    background: #101820; padding: 10px 8px 14px;
+  }
+  .tab { flex: 1; text-align: center; font-size: 15px; color: rgba(255,255,255,.4); }
+  .tab .ticon { font-size: 22px; display: block; margin-bottom: 5px; }
+  .tab.on { color: #93c5fd; font-weight: 600; }
+  .tab.on .ticon {
+    /* 必须是块级 + 居中，否则图标会和文字挤在同一行 */
+    display: block;
+    width: fit-content;
+    margin: 0 auto 5px;
+    background: rgba(96,165,250,.16);
+    border-radius: 999px;
+    padding: 4px 18px;
+  }
+
+  .fab {
+    position: absolute; right: 24px; bottom: 116px;
+    width: 54px; height: 54px; border-radius: 18px;
+    background: linear-gradient(135deg, #60a5fa, #2dd4bf);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 26px rgba(96,165,250,.45);
+    font-size: 31px; color: #0b0f14; font-weight: 700; z-index: 5;
+  }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="glow-1"></div><div class="glow-2"></div>
+  <div class="star s1"></div><div class="star s2"></div><div class="star s3"></div>
+  <div class="star s4"></div><div class="star s5"></div><div class="star s6"></div>
+
+  <div class="inner">
+    <!-- 左列 -->
+    <div class="left">
+      <div class="brand">
+        <div class="logo">🐾</div>
+        <div>
+          <div class="brand-name">Neko VRC</div>
+          <div class="brand-slogan">看看好友都在哪个世界</div>
+        </div>
+      </div>
+
+      <div class="beta-badge"><span class="dot"></span>首次公开内测</div>
+      <h1 class="title">把整个 VRChat<br>装进<span class="accent">口袋里</span></h1>
+
+    </div>
+
+    <!-- 右列手机（绝对定位居中） -->
+    <div class="right">
+      <div class="phone-halo"></div>
+      <div class="phone">
+        <div class="screen">
+          <div class="statusbar"><span>16:46</span><span>5G ⚡</span></div>
+          <div class="appbar">
+            <div class="t">好友 <span class="n">35 在线 / 158</span></div>
+            <div class="icons">
+              <span class="odot"></span>
+              <div class="ic"></div><div class="ic"></div>
+            </div>
+          </div>
+          <div class="search">🔍 搜好友名字</div>
+          <div class="chips">
+            <div class="chip on">全部 158</div><div class="chip">在线 35</div>
+            <div class="chip">Web 15</div><div class="chip">离线 123</div>
+          </div>
+
+          <div class="group-h">🌙 <span class="bar w40"></span> · <span class="type">好友+</span> · 2 人</div>
+          <div class="frow g1">
+            <div class="fava"></div>
+            <div><div class="fname"><span class="bar w70"></span></div>
+                 <div class="fstatus"><span class="bar dim w55"></span> · 在此 3 分钟</div></div>
+          </div>
+          <div class="frow g2">
+            <div class="fava"></div>
+            <div><div class="fname"><span class="bar w95"></span></div>
+                 <div class="fstatus"><span class="bar dim w70"></span> · 在此 3 分钟</div></div>
+          </div>
+
+          <div class="group-h">🏠 <span class="bar w70"></span> · <span class="type">仅限好友</span> · 2 人</div>
+          <div class="frow g3">
+            <div class="fava"></div>
+            <div><div class="fname"><span class="bar w70"></span></div>
+                 <div class="fstatus"><span class="bar dim w95"></span> · 在此 4 小时</div></div>
+          </div>
+          <div class="frow g3">
+            <div class="fava"></div>
+            <div><div class="fname"><span class="bar w55"></span></div>
+                 <div class="fstatus"><span class="bar dim w70"></span> · 在此 4 小时</div></div>
+          </div>
+
+          <div class="group-h">🏠 <span class="bar w95"></span> · <span class="type">好友+</span> · 2 人</div>
+          <div class="frow g4">
+            <div class="fava"></div>
+            <div><div class="fname"><span class="bar w70"></span></div>
+                 <div class="fstatus"><span class="bar dim w95"></span> · 在此 2 小时</div></div>
+          </div>
+
+          <div class="tabbar">
+            <div class="tab on"><span class="ticon">👥</span>好友</div>
+            <div class="tab"><span class="ticon">🔍</span>查找</div>
+            <div class="tab"><span class="ticon">📈</span>动态</div>
+            <div class="tab"><span class="ticon">👤</span>我</div>
+          </div>
+        </div>
+        <div class="fab">＋</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

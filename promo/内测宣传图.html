@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Neko VRC 首次公开内测</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #05080c; }
+  body {
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; padding: 24px;
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  }
+  .poster {
+    position: relative; width: 1080px; height: 1920px;
+    background: #0b0f14; overflow: hidden;
+    border-radius: 28px;
+  }
+  /* ---- 氛围光 ---- */
+  .glow-1 {
+    position: absolute; width: 900px; height: 900px; left: 90px; top: -420px;
+    background: radial-gradient(circle, rgba(96,165,250,.20) 0%, transparent 62%);
+  }
+  .glow-2 {
+    position: absolute; width: 820px; height: 820px; right: -260px; top: 880px;
+    background: radial-gradient(circle, rgba(45,212,191,.14) 0%, transparent 60%);
+  }
+  .glow-3 {
+    position: absolute; width: 700px; height: 700px; left: -200px; bottom: -180px;
+    background: radial-gradient(circle, rgba(96,165,250,.10) 0%, transparent 60%);
+  }
+  /* 星星点缀 */
+  .star { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.35); }
+  .s1 { left: 140px; top: 260px; } .s2 { left: 900px; top: 180px; width: 3px; height: 3px; }
+  .s3 { right: 120px; top: 420px; } .s4 { left: 60px; top: 760px; width: 4px; height: 4px; opacity:.5; }
+  .s5 { right: 200px; top: 1100px; opacity:.4; } .s6 { left: 320px; top: 1500px; width: 3px; height: 3px; opacity:.6; }
+
+  .inner { position: relative; height: 100%; padding: 88px 84px 0; }
+
+  /* ---- 顶部品牌区 ---- */
+  .brand { display: flex; align-items: center; gap: 30px; }
+  .logo {
+    width: 108px; height: 108px; border-radius: 30px;
+    background: linear-gradient(135deg, #60a5fa, #2dd4bf);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 56px; color: #0b0f14;
+    box-shadow: 0 12px 44px rgba(96,165,250,.45);
+  }
+  .brand-name { font-size: 58px; font-weight: 800; letter-spacing: 1px; color: #fff; }
+  .brand-slogan { font-size: 26px; color: rgba(255,255,255,.42); margin-top: 6px; letter-spacing: 2px; }
+
+  .beta-badge {
+    margin-top: 74px; display: inline-flex; align-items: center; gap: 16px;
+    padding: 16px 34px; border-radius: 999px;
+    border: 1.5px solid rgba(96,165,250,.45);
+    background: rgba(96,165,250,.10);
+    font-size: 30px; font-weight: 700; letter-spacing: 6px; color: #93c5fd;
+  }
+  .beta-badge .dot { width: 12px; height: 12px; border-radius: 50%; background: #4ade80;
+    box-shadow: 0 0 14px #4ade80; }
+
+  h1.title { margin-top: 26px; font-size: 88px; line-height: 1.18; font-weight: 800; color: #fff; }
+  h1.title .accent {
+    background: linear-gradient(100deg, #60a5fa, #5eead4);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .subtitle { margin-top: 22px; font-size: 30px; line-height: 1.7; color: rgba(255,255,255,.52); }
+
+  /* ---- 手机 mockup ---- */
+  .phone-zone { position: absolute; right: 70px; top: 560px; width: 470px; }
+  .phone {
+    position: relative; border-radius: 44px; padding: 12px;
+    background: linear-gradient(160deg, #2a3644, #131a22);
+    box-shadow: 0 40px 90px rgba(0,0,0,.65), 0 0 0 1.5px rgba(255,255,255,.09),
+                0 0 90px rgba(96,165,250,.16);
+  }
+  .screen {
+    border-radius: 34px; overflow: hidden; background: #0d1219;
+    border: 1px solid rgba(255,255,255,.05);
+  }
+  .statusbar {
+    display: flex; justify-content: space-between; padding: 12px 22px 8px;
+    font-size: 15px; color: rgba(255,255,255,.6);
+  }
+  .appbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px 12px;
+  }
+  .appbar .t { font-size: 24px; font-weight: 700; color: #fff; }
+  .appbar .n { font-size: 15px; color: rgba(255,255,255,.4); }
+  .appbar .icons { display: flex; gap: 12px; }
+  .appbar .ic { width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,.07); }
+
+  .search {
+    margin: 2px 18px 10px; padding: 11px 16px; border-radius: 13px;
+    background: rgba(255,255,255,.055); font-size: 16px;
+    color: rgba(255,255,255,.32); display: flex; align-items: center; gap: 9px;
+  }
+  .chips { display: flex; gap: 8px; padding: 0 18px 12px; }
+  .chip {
+    padding: 6px 15px; border-radius: 999px; font-size: 14.5px;
+    color: rgba(255,255,255,.55); background: rgba(255,255,255,.06);
+  }
+  .chip.on { background: rgba(96,165,250,.17); color: #93c5fd; font-weight: 600; }
+
+  .group-h {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 20px 8px; font-size: 14.5px; color: rgba(255,255,255,.42);
+  }
+  .group-h .type { color: #93c5fd; font-weight: 600; }
+
+  .frow {
+    display: flex; align-items: center; gap: 12px;
+    margin: 0 14px 2px; padding: 9px 8px; border-radius: 14px;
+  }
+  .frow.hl { background: linear-gradient(100deg, rgba(96,165,250,.16), rgba(45,212,191,.10)); }
+  .fava {
+    width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, #7c3aed, #ec4899);
+    position: relative;
+  }
+  .fava.f2 { background: linear-gradient(135deg, #0ea5e9, #8b5cf6); }
+  .fava.f3 { background: linear-gradient(135deg, #10b981, #3b82f6); }
+  .fava.f4 { background: linear-gradient(135deg, #f472b6, #fb7185); }
+  .fava::after {
+    content: ""; position: absolute; right: 0px; bottom: 1px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #4ade80; border: 2.5px solid #0d1219;
+  }
+  .bar {
+    display: inline-block; border-radius: 6px;
+    background: rgba(255,255,255,.30); height: 13px; vertical-align: middle;
+  }
+  .bar.dim { background: rgba(255,255,255,.18); height: 10px; }
+  .w70 { width: 70px; } .w95 { width: 95px; } .w55 { width: 55px; } .w40 { width: 40px; }
+
+  .fab {
+    position: absolute; right: 22px; bottom: 26px;
+    width: 52px; height: 52px; border-radius: 17px;
+    background: linear-gradient(135deg, #60a5fa, #2dd4bf);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 26px rgba(96,165,250,.45);
+    font-size: 30px; color: #0b0f14; font-weight: 700;
+  }
+
+  /* ---- 功能亮点 ---- */
+  .features { margin-top: 1210px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px 40px; }
+  .feat { display: flex; align-items: center; gap: 18px; }
+  .fic {
+    width: 62px; height: 62px; border-radius: 18px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 30px;
+    background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.08);
+  }
+  .feat .ft { font-size: 27px; font-weight: 700; color: rgba(255,255,255,.9); }
+  .feat .fd { font-size: 19px; color: rgba(255,255,255,.42); margin-top: 4px; }
+
+  /* ---- 底部 ---- */
+  .bottom {
+    position: absolute; left: 84px; right: 84px; bottom: 96px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 40px; border-top: 1px solid rgba(255,255,255,.09);
+  }
+  .cta .c1 { font-size: 32px; font-weight: 800; color: #fff; letter-spacing: 1px; }
+  .cta .c2 { font-size: 21px; color: rgba(255,255,255,.4); margin-top: 10px; }
+  .cta .c2 b { color: #93c5fd; font-weight: 700; }
+  .qr-hint {
+    text-align: center; font-size: 18px; color: rgba(255,255,255,.4); letter-spacing: 1px;
+  }
+  .qr {
+    width: 128px; height: 128px; border-radius: 20px; margin-bottom: 12px;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.14) 0 7px, transparent 7px 14px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.14) 0 7px, transparent 7px 14px),
+      #101820;
+    border: 1.5px solid rgba(255,255,255,.14);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px;
+  }
+  .nonofficial {
+    position: absolute; left: 0; right: 0; bottom: 34px;
+    text-align: center; font-size: 17px; color: rgba(255,255,255,.24); letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="glow-1"></div><div class="glow-2"></div><div class="glow-3"></div>
+  <div class="star s1"></div><div class="star s2"></div><div class="star s3"></div>
+  <div class="star s4"></div><div class="star s5"></div><div class="star s6"></div>
+
+  <div class="inner">
+    <!-- 品牌 -->
+    <div class="brand">
+      <div class="logo">🐾</div>
+      <div>
+        <div class="brand-name">Neko VRC</div>
+        <div class="brand-slogan">看看好友都在哪个世界</div>
+      </div>
+    </div>
+
+    <!-- 主标语 -->
+    <div class="beta-badge"><span class="dot"></span>首次公开内测</div>
+    <h1 class="title">把整个 VRChat<br>装进<span class="accent">口袋里</span></h1>
+    <div class="subtitle">非官方 Android 客户端 · 纯 API 驱动 · 无需 ROOT<br>手机上随时掌握好友动态，一键建房邀请开黑</div>
+  </div>
+
+  <!-- 手机 mockup -->
+  <div class="phone-zone">
+    <div class="phone">
+      <div class="screen">
+        <div class="statusbar"><span>13:57</span><span>📶 ⚡</span></div>
+        <div class="appbar">
+          <div><div class="t">好友</div><div class="n">30 在线 / 158</div></div>
+          <div class="icons"><div class="ic"></div><div class="ic"></div></div>
+        </div>
+        <div class="search">🔍 搜索好友名字</div>
+        <div class="chips">
+          <div class="chip on">全部 158</div><div class="chip">在线 30</div>
+          <div class="chip">离线 128</div>
+        </div>
+        <div class="group-h">🏠 <span class="bar w70"></span> · <span class="type">好友+</span> · 2 人</div>
+        <div class="frow hl">
+          <div class="fava"></div>
+          <div><div class="fname"><span class="bar w70"></span></div><div class="fstatus"><span class="bar dim w55"></span> · 在此 35 分钟</div></div>
+        </div>
+        <div class="frow">
+          <div class="fava f2"></div>
+          <div><div class="fname"><span class="bar w55"></span></div><div class="fstatus"><span class="bar dim w70"></span> · 在此 35 分钟</div></div>
+        </div>
+        <div class="group-h">🏠 <span class="bar w95"></span> · <span class="type">邀请+</span> · 2 人</div>
+        <div class="frow">
+          <div class="fava f3"></div>
+          <div><div class="fname"><span class="bar w70"></span></div><div class="fstatus"><span class="bar dim w95"></span></div></div>
+        </div>
+        <div class="frow">
+          <div class="fava f4"></div>
+          <div><div class="fname"><span class="bar w95"></span></div><div class="fstatus"><span class="bar dim w40"></span></div></div>
+        </div>
+      </div>
+      <div class="fab">＋</div>
+    </div>
+  </div>
+
+  <div class="inner" style="pointer-events:none;">
+    <!-- 功能 -->
+    <div class="features">
+      <div class="feat">
+        <div class="fic">🌍</div>
+        <div><div class="ft">实时好友动态</div><div class="fd">按房间自动分组</div></div>
+      </div>
+      <div class="feat">
+        <div class="fic">🏠</div>
+        <div><div class="ft">一键建房邀请</div><div class="fd">批量邀请好友开黑</div></div>
+      </div>
+      <div class="feat">
+        <div class="fic">⭐</div>
+        <div><div class="ft">收藏与模型管理</div><div class="fd">收藏夹 · 模型切换</div></div>
+      </div>
+      <div class="feat">
+        <div class="fic">✨</div>
+        <div><div class="ft">完整个人装扮</div><div class="fd">头像框 · 名字牌 · 特效</div></div>
+      </div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="bottom">
+      <div class="cta">
+        <div class="c1">内测报名中 · 2026.10</div>
+        <div class="c2">名额有限 · 反馈送 <b>VRC+ 专属彩蛋</b>（doge）</div>
+      </div>
+      <div class="qr-hint"><div class="qr">🐾</div>扫码加入内测群</div>
+    </div>
+    <div class="nonofficial">非官方应用 · 数据来自 VRChat 公开 API · 与 VRChat Inc. 无关</div>
+  </div>
+</div>
+</body>
+</html>
