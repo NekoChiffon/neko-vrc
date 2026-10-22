@@ -12,7 +12,7 @@ class AppInfo {
   static const String version = '0.38.9';
 
   /// 联系方式：建议填邮箱或你的域名，方便 VRChat 团队在必要时联系你。
-  static const String contactInfo = '1716536406@qq.com';
+  static const String contactInfo = 'ChiffonNya@126.com';
 
   static const String displayName = 'Neko VRC';
 }
