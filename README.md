@@ -66,10 +66,6 @@ storeFile=neko-release.jks
 
 应用会在 User-Agent 中声明自身名称与联系方式，联系方式见 `lib/src/core/app_info.dart`。
 
-## 联系
-
-- 站点：nekochiffon.top
-
 ## 版本
 
 当前 `0.38.8+116`。
