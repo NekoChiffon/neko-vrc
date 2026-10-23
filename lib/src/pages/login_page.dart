@@ -109,39 +109,30 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final auth = ref.watch(authProvider);
 
     return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.62),
-            radius: 1.15,
-            colors: [Color(0xFF16262F), Color(0xFF0B0F14)],
-          ),
-        ),
-        child: SafeArea(
+      body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
+              constraints: const BoxConstraints(maxWidth: 380),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const _Logo(),
-                  const SizedBox(height: 28),
+                  const _Brand(),
+                  const SizedBox(height: 36),
                   if (auth is AuthAwaitingTwoFactor)
                     _twoFactorBody(auth)
                   else if (_savedCardVisible(ref))
                     _savedAccountBody(ref.watch(savedAccountProvider)!)
                   else
                     _credentialsBody(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
                   Text(
-                    '非官方应用 · 数据来自 VRChat 公开 API\n登录凭据只在本机使用，不会经过任何第三方服务器',
-                    textAlign: TextAlign.center,
+                    '非官方客户端，与 VRChat 官方无关\n登录凭据仅保存在本机',
                     style: TextStyle(
                       fontSize: AppText.label,
-                      height: 1.6,
-                      color: Colors.white.withValues(alpha: 0.3),
+                      height: 1.7,
+                      color: Colors.white.withValues(alpha: 0.28),
                     ),
                   ),
                 ],
@@ -149,7 +140,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -238,52 +228,50 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
   }
 
-  /// 上次登录的账号卡片：头像 + 名字 + 一键登录 / 切换账号。
+  /// 上次登录的账号：头像 + 名字 + 继续登录 / 使用其他账号。
   Widget _savedAccountBody(SavedAccount saved) {
     final name = saved.displayName.isEmpty ? '上次登录的账号' : saved.displayName;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const Text(
+          '继续登录',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '使用上次登录的账号',
+          style: TextStyle(
+            fontSize: AppText.secondary,
+            color: Colors.white.withValues(alpha: 0.4),
+          ),
+        ),
+        const SizedBox(height: 20),
         Container(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.045),
-            borderRadius: BorderRadius.circular(AppRadius.sheet),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.circular(AppRadius.field),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
           child: Row(
             children: [
-              Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppTheme.accent.withValues(alpha: 0.5),
-                    width: 1.5,
-                  ),
-                ),
-                child: ClipOval(
+              ClipOval(
+                child: SizedBox(
+                  width: 46,
+                  height: 46,
                   child: saved.avatarUrl.isEmpty
-                      ? ColoredBox(
-                          color: AppTheme.surfaceHigh,
-                          child: Icon(
-                            Icons.person,
-                            size: 28,
-                            color: Colors.white.withValues(alpha: 0.3),
-                          ),
-                        )
+                      ? const ColoredBox(color: AppTheme.surfaceHigh)
                       : CachedNetworkImage(
                           imageUrl: saved.avatarUrl,
                           fit: BoxFit.cover,
-                          errorWidget: (_, _, _) => const ColoredBox(
-                            color: AppTheme.surfaceHigh,
-                          ),
+                          errorWidget: (_, _, _) =>
+                              const ColoredBox(color: AppTheme.surfaceHigh),
                         ),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -293,94 +281,70 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                        fontSize: AppText.body,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
-                      '上次登录的账号',
+                      saved.username.isEmpty ? 'VRChat 账号' : saved.username,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: AppText.label,
+                        fontSize: AppText.caption,
                         color: Colors.white.withValues(alpha: 0.35),
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(
-                Icons.verified_user_outlined,
-                size: 20,
-                color: AppTheme.accent.withValues(alpha: 0.6),
-              ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        _GradientButton(
-          label: '一键登录',
+        const SizedBox(height: 20),
+        _PrimaryButton(
+          label: '继续登录',
           busy: _busy,
           onTap: _oneTapLogin,
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 2),
         TextButton(
           onPressed: _busy ? null : _switchAccount,
-          child: Text(
-            '切换账号',
-            style: TextStyle(
-              fontSize: AppText.secondary,
-              color: Colors.white.withValues(alpha: 0.45),
-            ),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white.withValues(alpha: 0.45),
+            minimumSize: const Size(0, 38),
+          ),
+          child: const Text(
+            '使用其他账号',
+            style: TextStyle(fontSize: AppText.caption),
           ),
         ),
         if (_error != null) ...[
           const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF87171).withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(
-                color: const Color(0xFFF87171).withValues(alpha: 0.25),
+          _ErrorText(_error!),
+          const SizedBox(height: 2),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: _busy
+                  ? null
+                  : () => setState(() {
+                        _username.text = saved.username;
+                        _forceForm = true;
+                        _error = null;
+                      }),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                minimumSize: const Size(0, 34),
+                foregroundColor: AppTheme.accent,
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  _error!,
-                  style: const TextStyle(
-                    fontSize: AppText.label,
-                    height: 1.6,
-                    color: Color(0xFFFCA5A5),
-                  ),
+              child: const Text(
+                '重新登录（只需输密码）',
+                style: TextStyle(
+                  fontSize: AppText.caption,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 4),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: _busy
-                        ? null
-                        : () => setState(() {
-                              _username.text = saved.username;
-                              _forceForm = true;
-                              _error = null;
-                            }),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      minimumSize: const Size(0, 36),
-                    ),
-                    child: Text(
-                      '重新登录（只需输密码）',
-                      style: TextStyle(
-                        fontSize: AppText.caption,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.accent,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
@@ -397,17 +361,31 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const Text(
+          '登录',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '使用 VRChat 账号或邮箱',
+          style: TextStyle(
+            fontSize: AppText.secondary,
+            color: Colors.white.withValues(alpha: 0.4),
+          ),
+        ),
+        const SizedBox(height: 22),
+        const _FieldLabel('用户名 / 邮箱'),
+        const SizedBox(height: 8),
         TextField(
           controller: _username,
           autocorrect: false,
           enableSuggestions: false,
           textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(
-            hintText: 'VRChat 用户名或邮箱',
-            prefixIcon: Icon(Icons.person_outline),
-          ),
+          decoration: const InputDecoration(hintText: '用户名或邮箱'),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+        const _FieldLabel('密码'),
+        const SizedBox(height: 8),
         TextField(
           controller: _password,
           obscureText: _obscure,
@@ -417,55 +395,73 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           onSubmitted: (_) => _busy ? null : _submitCredentials(),
           decoration: InputDecoration(
             hintText: '密码',
-            prefixIcon: const Icon(Icons.lock_outline),
             suffixIcon: IconButton(
-              icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+              iconSize: 20,
+              color: Colors.white.withValues(alpha: 0.4),
+              icon: Icon(
+                _obscure
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+              ),
               onPressed: () => setState(() => _obscure = !_obscure),
             ),
           ),
         ),
         if (_error != null || signedOutMessage != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           _ErrorText(_error ?? signedOutMessage!),
         ],
-        const SizedBox(height: 6),
+        const SizedBox(height: 10),
         InkWell(
           onTap: () => setState(() => _rememberPassword = !_rememberPassword),
-          borderRadius: BorderRadius.circular(AppRadius.field),
+          borderRadius: BorderRadius.circular(6),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
+            padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
                 SizedBox(
-                  width: 22,
-                  height: 22,
+                  width: 18,
+                  height: 18,
                   child: Checkbox(
                     value: _rememberPassword,
                     onChanged: (v) =>
                         setState(() => _rememberPassword = v ?? false),
                     visualDensity: VisualDensity.compact,
                     activeColor: AppTheme.accent,
+                    checkColor: const Color(0xFF08131A),
                     side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.3),
+                      color: Colors.white.withValues(alpha: 0.25),
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    '记住密码（换网络掉登录时可一键重新验证）',
-                    style: TextStyle(
-                      fontSize: AppText.label,
-                      color: Colors.white.withValues(alpha: 0.45),
-                    ),
+                Text(
+                  '记住密码',
+                  style: TextStyle(
+                    fontSize: AppText.caption,
+                    color: Colors.white.withValues(alpha: 0.55),
                   ),
                 ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        _GradientButton(
+        if (_rememberPassword) ...[
+          const SizedBox(height: 2),
+          Padding(
+            padding: const EdgeInsets.only(left: 28),
+            child: Text(
+              '仅保存在本机的加密存储里，换网络掉登录时可自动重新验证',
+              style: TextStyle(
+                fontSize: AppText.label,
+                height: 1.6,
+                color: Colors.white.withValues(alpha: 0.28),
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 18),
+        _PrimaryButton(
           label: '登录',
           busy: _busy,
           onTap: () => _submitCredentials(),
@@ -475,60 +471,56 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Widget _twoFactorBody(AuthAwaitingTwoFactor state) {
+    final emailOtp = state.types.contains(TwoFactorAuthType.emailOtp);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
+        const Text(
           '两步验证',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleMedium,
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
           state.hint,
-          textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: AppText.caption,
+            fontSize: AppText.secondary,
             height: 1.6,
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.4),
           ),
         ),
-        if (state.types.contains(TwoFactorAuthType.emailOtp)) ...[
-          const SizedBox(height: 8),
+        if (emailOtp) ...[
+          const SizedBox(height: 6),
           Text(
-            '验证码已发送到你的邮箱，填进来即可',
-            textAlign: TextAlign.center,
+            '验证码已发送到你的邮箱',
             style: TextStyle(
-              fontSize: AppText.label,
+              fontSize: AppText.caption,
               color: AppTheme.accent.withValues(alpha: 0.8),
             ),
           ),
         ],
-        const SizedBox(height: 20),
+        const SizedBox(height: 22),
+        const _FieldLabel('验证码'),
+        const SizedBox(height: 8),
         TextField(
           controller: _code,
           autofocus: true,
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 22, letterSpacing: 6),
+          style: const TextStyle(fontSize: 20, letterSpacing: 6),
           onSubmitted: (_) => _busy ? null : _submitCode(),
-          decoration: const InputDecoration(hintText: '000000'),
+          decoration: const InputDecoration(hintText: '6 位验证码'),
         ),
         if (_error != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           _ErrorText(_error!),
         ],
         const SizedBox(height: 18),
-        FilledButton(
-          onPressed: _busy ? null : _submitCode,
-          child: _busy
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('验证'),
+        _PrimaryButton(
+          label: '验证',
+          busy: _busy,
+          onTap: _submitCode,
         ),
+        const SizedBox(height: 2),
         TextButton(
           onPressed: _busy
               ? null
@@ -539,76 +531,84 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     _code.clear();
                   });
                 },
-          child: const Text('返回'),
-        ),
-        if (state.types.contains(TwoFactorAuthType.emailOtp))
-          Text(
-            '没收到邮件？VRChat 的验证码有效期很短，重新登录一次可以再发一封。',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: AppText.label, color: Colors.white.withValues(alpha: 0.3)),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white.withValues(alpha: 0.45),
+            minimumSize: const Size(0, 38),
           ),
+          child: const Text('返回', style: TextStyle(fontSize: AppText.caption)),
+        ),
+        if (emailOtp) ...[
+          const SizedBox(height: 8),
+          Text(
+            '没收到邮件？验证码有效期很短，重新登录一次可以再发一封。',
+            style: TextStyle(
+              fontSize: AppText.label,
+              height: 1.6,
+              color: Colors.white.withValues(alpha: 0.28),
+            ),
+          ),
+        ],
       ],
     );
   }
 }
 
-class _Logo extends StatelessWidget {
-  const _Logo();
+/// 左上角品牌区：小方块图标 + 名字，不做发光和大渐变。
+class _Brand extends StatelessWidget {
+  const _Brand();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
       children: [
-        Stack(
-          alignment: Alignment.center,
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppTheme.accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(Icons.pets, size: 21, color: AppTheme.accent),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // 背后一圈柔光
-            Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppTheme.accent.withValues(alpha: 0.22),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
+            const Text(
+              'Neko VRC',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
             ),
-            Container(
-              width: 78,
-              height: 78,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppTheme.accent, AppTheme.accentAlt],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.accent.withValues(alpha: 0.35),
-                    blurRadius: 24,
-                    spreadRadius: 2,
-                  ),
-                ],
+            const SizedBox(height: 2),
+            Text(
+              'VRChat 第三方客户端',
+              style: TextStyle(
+                fontSize: AppText.label,
+                color: Colors.white.withValues(alpha: 0.32),
               ),
-              child: const Icon(Icons.pets, size: 40, color: Color(0xFF0B0F14)),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        const Text(
-          'Neko VRC',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: 0.5),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '看看好友都在哪个世界',
-          style: TextStyle(fontSize: AppText.secondary, color: Colors.white.withValues(alpha: 0.4)),
-        ),
       ],
+    );
+  }
+}
+
+/// 输入框上方的小标签，代替字段里的前缀图标。
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: AppText.caption,
+        fontWeight: FontWeight.w500,
+        color: Colors.white.withValues(alpha: 0.45),
+      ),
     );
   }
 }
@@ -620,31 +620,36 @@ class _ErrorText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF87171).withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppRadius.field),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, size: 16, color: Color(0xFFF87171)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: AppText.caption, color: Color(0xFFFCA5A5)),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 2),
+          child: Icon(
+            Icons.error_outline,
+            size: 15,
+            color: Color(0xFFF87171),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: AppText.caption,
+              height: 1.5,
+              color: Color(0xFFFCA5A5),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-/// 渐变主按钮（FilledButton 没法直接上渐变）。
-class _GradientButton extends StatelessWidget {
-  const _GradientButton({
+/// 主按钮：实色、无光晕。
+class _PrimaryButton extends StatelessWidget {
+  const _PrimaryButton({
     required this.label,
     required this.busy,
     required this.onTap,
@@ -656,54 +661,31 @@ class _GradientButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: busy ? null : onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        height: 52,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: busy
-                ? [
-                    AppTheme.accent.withValues(alpha: 0.5),
-                    AppTheme.accentAlt.withValues(alpha: 0.5),
-                  ]
-                : [AppTheme.accent, AppTheme.accentAlt],
-          ),
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: busy
-              ? null
-              : [
-                  BoxShadow(
-                    color: AppTheme.accent.withValues(alpha: 0.28),
-                    blurRadius: 18,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-        ),
-        child: Center(
-          child: busy
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Color(0xFF0B0F14),
-                  ),
-                )
-              : Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: AppText.body,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1,
-                    color: Color(0xFF0B0F14),
-                  ),
-                ),
+    return FilledButton(
+      onPressed: busy ? null : onTap,
+      style: FilledButton.styleFrom(
+        backgroundColor: AppTheme.accent,
+        foregroundColor: const Color(0xFF08131A),
+        disabledBackgroundColor: AppTheme.accent.withValues(alpha: 0.35),
+        disabledForegroundColor: const Color(0xFF08131A),
+        elevation: 0,
+        minimumSize: const Size.fromHeight(48),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        textStyle: const TextStyle(
+          fontSize: AppText.body,
+          fontWeight: FontWeight.w600,
         ),
       ),
+      child: busy
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFF08131A),
+              ),
+            )
+          : Text(label),
     );
   }
 }
