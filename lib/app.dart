@@ -56,25 +56,38 @@ class _SplashPage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 72,
-              height: 72,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppTheme.accent, AppTheme.accentAlt],
+                color: AppTheme.accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.pets, size: 22, color: AppTheme.accent),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Neko VRC',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 14),
+            // 一条细进度线，代替屏幕正中的转圈。
+            SizedBox(
+              width: 96,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  minHeight: 2,
+                  backgroundColor: Colors.white.withValues(alpha: 0.06),
+                  color: Colors.white.withValues(alpha: 0.22),
                 ),
               ),
-              child: const Icon(Icons.pets, size: 36, color: Color(0xFF0B0F14)),
             ),
-            const SizedBox(height: 22),
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white.withValues(alpha: 0.35),
+            const SizedBox(height: 10),
+            Text(
+              '正在检查登录状态',
+              style: TextStyle(
+                fontSize: AppText.label,
+                color: Colors.white.withValues(alpha: 0.28),
               ),
             ),
           ],

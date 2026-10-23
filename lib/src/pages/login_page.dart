@@ -304,6 +304,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         const SizedBox(height: 20),
         _PrimaryButton(
           label: '继续登录',
+          busyLabel: '登录中…',
           busy: _busy,
           onTap: _oneTapLogin,
         ),
@@ -463,6 +464,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         const SizedBox(height: 18),
         _PrimaryButton(
           label: '登录',
+          busyLabel: '登录中…',
           busy: _busy,
           onTap: () => _submitCredentials(),
         ),
@@ -517,6 +519,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         const SizedBox(height: 18),
         _PrimaryButton(
           label: '验证',
+          busyLabel: '验证中…',
           busy: _busy,
           onTap: _submitCode,
         ),
@@ -651,11 +654,13 @@ class _ErrorText extends StatelessWidget {
 class _PrimaryButton extends StatelessWidget {
   const _PrimaryButton({
     required this.label,
+    required this.busyLabel,
     required this.busy,
     required this.onTap,
   });
 
   final String label;
+  final String busyLabel;
   final bool busy;
   final VoidCallback onTap;
 
@@ -676,16 +681,7 @@ class _PrimaryButton extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
-      child: busy
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Color(0xFF08131A),
-              ),
-            )
-          : Text(label),
+      child: Text(busy ? busyLabel : label),
     );
   }
 }
