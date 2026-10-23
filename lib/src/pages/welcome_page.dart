@@ -6,7 +6,7 @@ import 'package:vrchat_dart/vrchat_dart.dart';
 import '../providers/friends_provider.dart';
 import '../theme.dart';
 
-/// 登录成功后的欢迎过渡页：头像 + 打招呼，1.6 秒后进入主页。
+/// 登录成功后的过渡页：头像 + 名字，1.6 秒后进入主页。
 class WelcomePage extends ConsumerStatefulWidget {
   const WelcomePage({super.key, required this.user});
 
@@ -16,38 +16,14 @@ class WelcomePage extends ConsumerStatefulWidget {
   ConsumerState<WelcomePage> createState() => _WelcomePageState();
 }
 
-class _WelcomePageState extends ConsumerState<WelcomePage>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _scale;
-  late final Animation<double> _fade;
-
+class _WelcomePageState extends ConsumerState<WelcomePage> {
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-    _scale = Tween<double>(begin: 0.72, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
-    _fade = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0, 0.55, curve: Curves.easeOut),
-    );
-    _controller.forward();
-
     // 停一下再走，别一闪而过。
     Future<void>.delayed(const Duration(milliseconds: 1600), () {
       if (mounted) ref.read(welcomePendingProvider.notifier).state = false;
     });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 
   @override
@@ -60,112 +36,61 @@ class _WelcomePageState extends ConsumerState<WelcomePage>
         : (user.currentAvatarThumbnailImageUrl.isNotEmpty
             ? user.currentAvatarThumbnailImageUrl
             : user.currentAvatarImageUrl);
-    final name = user.displayName;
 
     return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.28),
-            radius: 0.95,
-            colors: [Color(0xFF1A2A33), Color(0xFF0B0F14)],
-          ),
-        ),
+      body: SafeArea(
         child: Center(
-          child: FadeTransition(
-            opacity: _fade,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOut,
+            builder: (context, value, child) =>
+                Opacity(opacity: value, child: child),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ScaleTransition(
-                  scale: _scale,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // 光晕
-                      Container(
-                        width: 168,
-                        height: 168,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              AppTheme.accent.withValues(alpha: 0.28),
-                              Colors.transparent,
-                            ],
+                ClipOval(
+                  child: SizedBox(
+                    width: 88,
+                    height: 88,
+                    child: avatar.isEmpty
+                        ? const ColoredBox(color: AppTheme.surfaceHigh)
+                        : CachedNetworkImage(
+                            imageUrl: avatar,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, _, _) =>
+                                const ColoredBox(color: AppTheme.surfaceHigh),
                           ),
-                        ),
-                      ),
-                      Container(
-                        width: 104,
-                        height: 104,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppTheme.accent.withValues(alpha: 0.55),
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.accent.withValues(alpha: 0.28),
-                              blurRadius: 26,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: avatar.isEmpty
-                              ? ColoredBox(
-                                  color: AppTheme.surfaceHigh,
-                                  child: Icon(
-                                    Icons.person,
-                                    size: 42,
-                                    color: Colors.white.withValues(alpha: 0.3),
-                                  ),
-                                )
-                              : CachedNetworkImage(
-                                  imageUrl: avatar,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (_, _, _) => const ColoredBox(
-                                    color: AppTheme.surfaceHigh,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
-                const SizedBox(height: 26),
-                Text(
-                  '欢迎！',
-                  style: TextStyle(
-                    fontSize: AppText.body,
-                    letterSpacing: 2,
-                    color: Colors.white.withValues(alpha: 0.45),
-                  ),
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 20),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 32),
                   child: Text(
-                    name,
+                    user.displayName,
                     textAlign: TextAlign.center,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      height: 1.2,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                const SizedBox(height: 30),
-                SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppTheme.accent.withValues(alpha: 0.6),
+                const SizedBox(height: 6),
+                Text(
+                  '已登录',
+                  style: TextStyle(
+                    fontSize: AppText.caption,
+                    color: Colors.white.withValues(alpha: 0.35),
+                  ),
+                ),
+                const SizedBox(height: 36),
+                Text(
+                  '正在进入主页',
+                  style: TextStyle(
+                    fontSize: AppText.label,
+                    color: Colors.white.withValues(alpha: 0.22),
                   ),
                 ),
               ],
