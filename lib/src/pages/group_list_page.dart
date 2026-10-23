@@ -37,7 +37,7 @@ class GroupListPage extends ConsumerWidget {
             child: Text(
               e.toString().replaceFirst('Exception: ', ''),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: AppText.caption, color: Colors.white.withValues(alpha: 0.45)),
+              style: TextStyle(fontSize: AppText.caption, color: context.appColors.ink(0.45)),
             ),
           ),
         ),
@@ -46,7 +46,7 @@ class GroupListPage extends ConsumerWidget {
             return Center(
               child: Text(
                 '还没有加入任何群组',
-                style: TextStyle(fontSize: AppText.caption, color: Colors.white.withValues(alpha: 0.4)),
+                style: TextStyle(fontSize: AppText.caption, color: context.appColors.ink(0.4)),
               ),
             );
           }
@@ -57,7 +57,7 @@ class GroupListPage extends ConsumerWidget {
             separatorBuilder: (_, _) => Divider(
               height: 1,
               indent: 66,
-              color: Colors.white.withValues(alpha: 0.05),
+              color: context.appColors.ink(0.05),
             ),
             itemBuilder: (context, i) => _GroupRow(group: groups[i]),
           );
@@ -95,8 +95,8 @@ class _GroupRow extends ConsumerWidget {
                   ? Container(
                       width: 40,
                       height: 40,
-                      color: AppTheme.surfaceHigh,
-                      child: const Icon(Icons.groups, size: 18, color: Colors.white24),
+                      color: context.appColors.surfaceHigh,
+                      child: Icon(Icons.groups, size: 18, color: context.appColors.ink(0.24)),
                     )
                   : CachedNetworkImage(
                       imageUrl: icon!,
@@ -107,7 +107,7 @@ class _GroupRow extends ConsumerWidget {
                       errorWidget: (_, _, _) => Container(
                         width: 40,
                         height: 40,
-                        color: AppTheme.surfaceHigh,
+                        color: context.appColors.surfaceHigh,
                       ),
                     ),
             ),
@@ -131,12 +131,12 @@ class _GroupRow extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
-                            color: AppTheme.accent.withValues(alpha: 0.15),
+                            color: context.appColors.accent.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             '代表',
-                            style: TextStyle(fontSize: AppText.label, color: AppTheme.accent),
+                            style: TextStyle(fontSize: AppText.label, color: context.appColors.accent),
                           ),
                         ),
                       ],
@@ -148,7 +148,7 @@ class _GroupRow extends ConsumerWidget {
                       '${group.memberCount} 成员',
                       style: TextStyle(
                         fontSize: AppText.label,
-                        color: Colors.white.withValues(alpha: 0.35),
+                        color: context.appColors.ink(0.35),
                       ),
                     ),
                   ],
@@ -158,7 +158,7 @@ class _GroupRow extends ConsumerWidget {
             Icon(
               Icons.chevron_right,
               size: 18,
-              color: Colors.white.withValues(alpha: 0.2),
+              color: context.appColors.ink(0.2),
             ),
           ],
         ),

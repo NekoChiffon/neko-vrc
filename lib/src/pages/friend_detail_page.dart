@@ -64,7 +64,7 @@ class _FriendDetailPageState extends ConsumerState<FriendDetailPage> {
   void _showMenu(FriendPresence friend) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.appColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -78,7 +78,7 @@ class _FriendDetailPageState extends ConsumerState<FriendDetailPage> {
               height: 4,
               margin: const EdgeInsets.only(top: 10, bottom: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: context.appColors.ink(0.15),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -162,9 +162,9 @@ class _FriendDetailPageState extends ConsumerState<FriendDetailPage> {
           maxLines: 3,
           minLines: 1,
           maxLength: 256,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: '只有你自己看得到',
-            counterStyle: TextStyle(fontSize: 10, color: Colors.white24),
+            counterStyle: TextStyle(fontSize: 10, color: context.appColors.ink(0.24)),
           ),
         ),
         actions: [
@@ -235,7 +235,7 @@ class _NoteCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 13),
       decoration: BoxDecoration(
-        color: const Color(0xE6151B23),
+        color: context.appColors.surface.withValues(alpha: 0.93),
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Column(
@@ -243,13 +243,13 @@ class _NoteCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 '备注',
                 style: TextStyle(
                   fontSize: AppText.label,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.8,
-                  color: AppTheme.accent,
+                  color: context.appColors.accent,
                 ),
               ),
               const SizedBox(width: 6),
@@ -257,13 +257,13 @@ class _NoteCard extends StatelessWidget {
                 '仅自己可见',
                 style: TextStyle(
                   fontSize: 10,
-                  color: Colors.white.withValues(alpha: 0.28),
+                  color: context.appColors.ink(0.28),
                 ),
               ),
               const Spacer(),
               GestureDetector(
                 onTap: onEdit,
-                child: const Icon(Icons.edit_outlined, size: 15, color: Colors.white38),
+                child: Icon(Icons.edit_outlined, size: 15, color: context.appColors.ink(0.38)),
               ),
             ],
           ),
@@ -273,7 +273,7 @@ class _NoteCard extends StatelessWidget {
             style: TextStyle(
               fontSize: AppText.secondary,
               height: 1.6,
-              color: Colors.white.withValues(alpha: 0.8),
+              color: context.appColors.ink(0.8),
             ),
           ),
         ],
@@ -299,7 +299,9 @@ class _MenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? const Color(0xFFFCA5A5) : Colors.white;
+    final color = danger
+        ? const Color(0xFFFCA5A5)
+        : context.appColors.ink(1);
 
     return InkWell(
       onTap: onTap,
@@ -326,7 +328,7 @@ class _MenuTile extends StatelessWidget {
                       hint!,
                       style: TextStyle(
                         fontSize: AppText.label,
-                        color: Colors.white.withValues(alpha: 0.28),
+                        color: context.appColors.ink(0.28),
                       ),
                     ),
                   ],
@@ -353,7 +355,7 @@ class _LocationSection extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
       decoration: BoxDecoration(
-        color: const Color(0xE6151B23),
+        color: context.appColors.surface.withValues(alpha: 0.93),
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Column(
@@ -365,7 +367,7 @@ class _LocationSection extends ConsumerWidget {
               fontSize: AppText.label,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.8,
-              color: AppTheme.accent,
+              color: context.appColors.accent,
             ),
           ),
           const SizedBox(height: 10),
@@ -380,7 +382,7 @@ class _LocationSection extends ConsumerWidget {
                   : '位置不可见',
               style: TextStyle(
                 fontSize: AppText.secondary,
-                color: Colors.white.withValues(alpha: 0.55),
+                color: context.appColors.ink(0.55),
               ),
             )
           else
@@ -389,7 +391,7 @@ class _LocationSection extends ConsumerWidget {
                 Icon(
                   Icons.meeting_room_outlined,
                   size: 15,
-                  color: AppTheme.accent.withValues(alpha: 0.75),
+                  color: context.appColors.accent.withValues(alpha: 0.75),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -425,11 +427,11 @@ class _WorldName extends ConsumerWidget {
         async.when(
           loading: () => Text(
             '载入世界名…',
-            style: TextStyle(fontSize: AppText.secondary, color: Colors.white.withValues(alpha: 0.4)),
+            style: TextStyle(fontSize: AppText.secondary, color: context.appColors.ink(0.4)),
           ),
           error: (_, _) => Text(
             worldId,
-            style: TextStyle(fontSize: AppText.caption, color: Colors.white.withValues(alpha: 0.4)),
+            style: TextStyle(fontSize: AppText.caption, color: context.appColors.ink(0.4)),
           ),
           data: (name) => Text(
             name ?? worldId,
@@ -441,7 +443,7 @@ class _WorldName extends ConsumerWidget {
         const SizedBox(height: 2),
         Text(
           type,
-          style: TextStyle(fontSize: AppText.label, color: Colors.white.withValues(alpha: 0.35)),
+          style: TextStyle(fontSize: AppText.label, color: context.appColors.ink(0.35)),
         ),
       ],
     );
@@ -472,7 +474,7 @@ class _Occupants extends ConsumerWidget {
                 '$n 人在此',
                 style: TextStyle(
                   fontSize: AppText.label,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: context.appColors.ink(0.4),
                 ),
               ),
             ),
@@ -507,7 +509,7 @@ class _CopyLaunchLink extends StatelessWidget {
         child: Icon(
           Icons.link_rounded,
           size: 16,
-          color: Colors.white.withValues(alpha: 0.4),
+          color: context.appColors.ink(0.4),
         ),
       ),
     );
@@ -576,8 +578,8 @@ class _InviteActionsState extends ConsumerState<_InviteActions> {
             label: const Text('请求加入'),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(44),
-              foregroundColor: Colors.white70,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+              foregroundColor: context.appColors.ink(0.7),
+              side: BorderSide(color: context.appColors.ink(0.15)),
             ),
           ),
         ),

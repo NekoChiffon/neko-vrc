@@ -1,7 +1,7 @@
 name: neko_vrc
 description: "Neko VRC — 查看 VRChat 好友与所在世界的第三方小工具"
 publish_to: 'none'
-version: 0.39.3+121
+version: 0.45.2+143
 
 environment:
   sdk: ^3.13.5
@@ -37,6 +37,8 @@ dependencies:
   flutter_cache_manager: ^3.4.5
   flutter_secure_storage: ^11.2.0
   flutter_local_notifications: ^22.3.2
+  # 打开 GitHub 项目主页
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

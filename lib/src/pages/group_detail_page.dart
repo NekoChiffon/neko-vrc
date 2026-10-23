@@ -28,7 +28,7 @@ class GroupDetailPage extends ConsumerWidget {
             child: Text(
               e.toString().replaceFirst('Exception: ', ''),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: AppText.secondary, color: Colors.white.withValues(alpha: 0.45)),
+              style: TextStyle(fontSize: AppText.secondary, color: context.appColors.ink(0.45)),
             ),
           ),
         ),
@@ -110,7 +110,7 @@ class GroupDetailPage extends ConsumerWidget {
                                   style: TextStyle(
                                     fontSize: AppText.secondary,
                                     height: 1.65,
-                                    color: Colors.white.withValues(alpha: 0.8),
+                                    color: context.appColors.ink(0.8),
                                   ),
                                 ),
                               ),
@@ -124,7 +124,7 @@ class GroupDetailPage extends ConsumerWidget {
                                   style: TextStyle(
                                     fontSize: AppText.caption,
                                     height: 1.7,
-                                    color: Colors.white.withValues(alpha: 0.65),
+                                    color: context.appColors.ink(0.65),
                                   ),
                                 ),
                               ),
@@ -217,10 +217,10 @@ class _GroupIcon extends ConsumerWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: AppTheme.surfaceHigh,
+        color: context.appColors.surfaceHigh,
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
-      child: const Icon(Icons.groups, color: Colors.white24),
+      child: Icon(Icons.groups, color: context.appColors.ink(0.24)),
     );
 
     return Container(
@@ -228,9 +228,9 @@ class _GroupIcon extends ConsumerWidget {
       height: size,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: AppTheme.canvas,
+        color: context.appColors.canvas,
         borderRadius: BorderRadius.circular(17),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: context.appColors.ink(0.1)),
       ),
       child: url == null || url!.isEmpty
           ? fallback
@@ -284,7 +284,7 @@ class _Announcement extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: AppText.caption,
                   height: 1.65,
-                  color: Colors.white.withValues(alpha: 0.7),
+                  color: context.appColors.ink(0.7),
                 ),
               ),
             ],
@@ -318,7 +318,7 @@ class _Card extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
       decoration: BoxDecoration(
-        color: const Color(0xE6151B23),
+        color: context.appColors.surface.withValues(alpha: 0.93),
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Column(
@@ -326,11 +326,11 @@ class _Card extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppText.label,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.8,
-              color: AppTheme.accent,
+              color: context.appColors.accent,
             ),
           ),
           const SizedBox(height: 10),
@@ -353,13 +353,13 @@ class _Stat extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: color ?? Colors.white.withValues(alpha: 0.4)),
+        Icon(icon, size: 12, color: color ?? context.appColors.ink(0.4)),
         const SizedBox(width: 5),
         Text(
           text,
           style: TextStyle(
             fontSize: AppText.caption,
-            color: Colors.white.withValues(alpha: 0.55),
+            color: context.appColors.ink(0.55),
           ),
         ),
       ],
@@ -386,14 +386,14 @@ class _Row extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: AppText.caption,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: context.appColors.ink(0.4),
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: AppText.caption, color: Colors.white70),
+              style: TextStyle(fontSize: AppText.caption, color: context.appColors.ink(0.7)),
             ),
           ),
           if (copiable)
@@ -409,7 +409,7 @@ class _Row extends StatelessWidget {
                 child: Icon(
                   Icons.copy_rounded,
                   size: 14,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: context.appColors.ink(0.4),
                 ),
               ),
             ),

@@ -50,7 +50,7 @@ class FavoritesPage extends ConsumerWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppText.caption,
-                color: Colors.white.withValues(alpha: 0.45),
+                color: context.appColors.ink(0.45),
               ),
             ),
           ),
@@ -59,21 +59,21 @@ class FavoritesPage extends ConsumerWidget {
           if (sections.isEmpty) {
             return Center(
               child: Padding(
-                padding: const EdgeInsets.all(40),
+                padding: EdgeInsets.all(40),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.star_border,
                       size: 42,
-                      color: Colors.white.withValues(alpha: 0.15),
+                      color: context.appColors.ink(0.15),
                     ),
                     const SizedBox(height: 14),
                     Text(
                       '还没有收藏任何世界',
                       style: TextStyle(
                         fontSize: AppText.secondary,
-                        color: Colors.white.withValues(alpha: 0.45),
+                        color: context.appColors.ink(0.45),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -82,7 +82,7 @@ class FavoritesPage extends ConsumerWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: AppText.label,
-                        color: Colors.white.withValues(alpha: 0.28),
+                        color: context.appColors.ink(0.28),
                       ),
                     ),
                   ],
@@ -132,7 +132,7 @@ class _SectionHeader extends StatelessWidget {
           Icon(
             Icons.folder_outlined,
             size: 13,
-            color: AppTheme.accent.withValues(alpha: 0.7),
+            color: context.appColors.accent.withValues(alpha: 0.7),
           ),
           const SizedBox(width: 7),
           Flexible(
@@ -143,7 +143,7 @@ class _SectionHeader extends StatelessWidget {
               style: TextStyle(
                 fontSize: AppText.secondary,
                 fontWeight: FontWeight.w600,
-                color: Colors.white.withValues(alpha: 0.85),
+                color: context.appColors.ink(0.85),
               ),
             ),
           ),
@@ -152,7 +152,7 @@ class _SectionHeader extends StatelessWidget {
             '$count 个',
             style: TextStyle(
               fontSize: AppText.label,
-              color: Colors.white.withValues(alpha: 0.32),
+              color: context.appColors.ink(0.32),
             ),
           ),
         ],
@@ -212,8 +212,8 @@ class _FavoriteRowState extends ConsumerState<_FavoriteRow> {
                 errorWidget: (_, _, _) => Container(
                   width: 72,
                   height: 54,
-                  color: AppTheme.surfaceHigh,
-                  child: const Icon(Icons.public, size: 18, color: Colors.white24),
+                  color: context.appColors.surfaceHigh,
+                  child: Icon(Icons.public, size: 18, color: context.appColors.ink(0.24)),
                 ),
               ),
             ),
@@ -235,7 +235,7 @@ class _FavoriteRowState extends ConsumerState<_FavoriteRow> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: AppText.label,
-                      color: Colors.white.withValues(alpha: 0.35),
+                      color: context.appColors.ink(0.35),
                     ),
                   ),
                 ],

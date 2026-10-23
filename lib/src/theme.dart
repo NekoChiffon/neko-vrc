@@ -1,6 +1,104 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'widgets/motion.dart';
+
+/// 深色 / 浅色两套主题共用的调色板。
+///
+/// 页面里不要直接写 `Colors.white.withValues(...)`：浅色模式下会很刺眼。
+/// 用 `context.appColors.ink(0.5)` 这类写法，颜色会跟着当前主题走。
+@immutable
+class AppColors extends ThemeExtension<AppColors> {
+  const AppColors({
+    required this.canvas,
+    required this.surface,
+    required this.surfaceHigh,
+    required this.inkBase,
+    required this.accent,
+    required this.accentAlt,
+    required this.isDark,
+  });
+
+  /// 页面底色。
+  final Color canvas;
+
+  /// 卡片 / 弹层底色。
+  final Color surface;
+
+  /// 输入框、次级卡片底色。
+  final Color surfaceHigh;
+
+  /// 文字和图标的基础色（深色模式是白，浅色模式是近黑）。
+  final Color inkBase;
+
+  final Color accent;
+  final Color accentAlt;
+  final bool isDark;
+
+  /// 文字 / 图标 / 分隔线用的颜色，[alpha] 越大越显眼。
+  Color ink(double alpha) => inkBase.withValues(alpha: alpha);
+
+  static const dark = AppColors(
+    canvas: Color(0xFF0B0F14),
+    surface: Color(0xFF151B23),
+    surfaceHigh: Color(0xFF1E2630),
+    inkBase: Colors.white,
+    accent: Color(0xFF7DD3FC),
+    accentAlt: Color(0xFFA78BFA),
+    isDark: true,
+  );
+
+  /// 白 + 淡蓝 + 淡粉。底色偏一点点冷调的白，避免纯白扎眼。
+  static const light = AppColors(
+    canvas: Color(0xFFF4F6FA),
+    surface: Colors.white,
+    surfaceHigh: Color(0xFFE9EEF6),
+    inkBase: Color(0xFF141A22),
+    accent: Color(0xFF3D8FCF),
+    accentAlt: Color(0xFFE488B3),
+    isDark: false,
+  );
+
+  @override
+  AppColors copyWith({
+    Color? canvas,
+    Color? surface,
+    Color? surfaceHigh,
+    Color? inkBase,
+    Color? accent,
+    Color? accentAlt,
+    bool? isDark,
+  }) {
+    return AppColors(
+      canvas: canvas ?? this.canvas,
+      surface: surface ?? this.surface,
+      surfaceHigh: surfaceHigh ?? this.surfaceHigh,
+      inkBase: inkBase ?? this.inkBase,
+      accent: accent ?? this.accent,
+      accentAlt: accentAlt ?? this.accentAlt,
+      isDark: isDark ?? this.isDark,
+    );
+  }
+
+  @override
+  AppColors lerp(ThemeExtension<AppColors>? other, double t) {
+    if (other is! AppColors) return this;
+    return AppColors(
+      canvas: Color.lerp(canvas, other.canvas, t)!,
+      surface: Color.lerp(surface, other.surface, t)!,
+      surfaceHigh: Color.lerp(surfaceHigh, other.surfaceHigh, t)!,
+      inkBase: Color.lerp(inkBase, other.inkBase, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
+      accentAlt: Color.lerp(accentAlt, other.accentAlt, t)!,
+      isDark: t < 0.5 ? isDark : other.isDark,
+    );
+  }
+}
+
+extension AppColorsX on BuildContext {
+  AppColors get appColors =>
+      Theme.of(this).extension<AppColors>() ?? AppColors.dark;
+}
 
 /// 深色为主的配色，接近 VRChat 官方界面那种「深底 + 青紫高光」的味道。
 class AppTheme {
@@ -12,15 +110,24 @@ class AppTheme {
   static const Color surface = Color(0xFF151B23);
   static const Color surfaceHigh = Color(0xFF1E2630);
 
-  static ThemeData dark() {
+  static ThemeData dark() => _build(AppColors.dark);
+
+  static ThemeData light() => _build(AppColors.light);
+
+  static ThemeData _build(AppColors colors) {
+    final isDark = colors.isDark;
     final scheme = ColorScheme.fromSeed(
-      seedColor: accent,
-      brightness: Brightness.dark,
+      seedColor: colors.accent,
+      brightness: isDark ? Brightness.dark : Brightness.light,
     ).copyWith(
-      surface: surface,
-      primary: accent,
-      secondary: accentAlt,
+      surface: colors.surface,
+      primary: colors.accent,
+      secondary: colors.accentAlt,
     );
+
+    final overlayStyle = isDark
+        ? SystemUiOverlayStyle.light
+        : SystemUiOverlayStyle.dark;
 
     return ThemeData(
       // 页面转场统一成「淡入 + 轻微上移」，比默认左右滑更轻。
@@ -36,30 +143,33 @@ class AppTheme {
       ),
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: canvas,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: canvas,
+      scaffoldBackgroundColor: colors.canvas,
+      extensions: [colors],
+      appBarTheme: AppBarTheme(
+        backgroundColor: colors.canvas,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
+        systemOverlayStyle: overlayStyle,
+        iconTheme: IconThemeData(color: colors.ink(0.85)),
         titleTextStyle: TextStyle(
-          color: Colors.white,
+          color: colors.ink(1),
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
       ),
-      listTileTheme: const ListTileThemeData(
-        iconColor: Colors.white70,
+      listTileTheme: ListTileThemeData(
+        iconColor: colors.ink(0.7),
       ),
       dividerTheme: DividerThemeData(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: colors.ink(0.06),
         thickness: 1,
         space: 1,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surfaceHigh,
-        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
+        fillColor: colors.surfaceHigh,
+        hintStyle: TextStyle(color: colors.ink(0.35)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -70,13 +180,15 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: accent, width: 1.4),
+          borderSide: BorderSide(color: colors.accent, width: 1.4),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(50),
+          foregroundColor: isDark ? colors.canvas : Colors.white,
+          backgroundColor: colors.accent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),

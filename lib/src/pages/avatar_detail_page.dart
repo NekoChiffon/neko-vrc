@@ -52,7 +52,7 @@ class _AvatarDetailPageState extends ConsumerState<AvatarDetailPage> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppText.caption,
-                color: Colors.white.withValues(alpha: 0.45),
+                color: context.appColors.ink(0.45),
               ),
             ),
           ),
@@ -70,7 +70,7 @@ class _AvatarDetailPageState extends ConsumerState<AvatarDetailPage> {
                   httpHeaders: ref.watch(imageHeadersProvider),
                   fit: BoxFit.cover,
                   errorWidget: (_, _, _) =>
-                      const ColoredBox(color: AppTheme.surfaceHigh),
+                      ColoredBox(color: context.appColors.surfaceHigh),
                 ),
               ),
             ),
@@ -85,7 +85,7 @@ class _AvatarDetailPageState extends ConsumerState<AvatarDetailPage> {
                 'by ${avatar.authorName}',
                 style: TextStyle(
                   fontSize: AppText.caption,
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: context.appColors.ink(0.45),
                 ),
               ),
             ],
@@ -94,19 +94,19 @@ class _AvatarDetailPageState extends ConsumerState<AvatarDetailPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppTheme.accent.withValues(alpha: 0.14),
+                  color: context.appColors.accent.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(AppRadius.field),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.check_circle, size: 14, color: AppTheme.accent),
+                    Icon(Icons.check_circle, size: 14, color: context.appColors.accent),
                     const SizedBox(width: 6),
                     Text(
                       '当前模型',
                       style: TextStyle(
                         fontSize: AppText.caption,
-                        color: AppTheme.accent,
+                        color: context.appColors.accent,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -162,7 +162,7 @@ class _AvatarDetailPageState extends ConsumerState<AvatarDetailPage> {
                       style: TextStyle(
                         fontSize: AppText.caption,
                         height: 1.6,
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: context.appColors.ink(0.7),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -227,13 +227,14 @@ class _AvatarDetailPageState extends ConsumerState<AvatarDetailPage> {
 }
 
 /// 评级颜色（和 VRChat 的蓝绿橙红一致）。
-Color performanceColor(String? rank) => switch (rank?.toLowerCase()) {
+Color performanceColor(BuildContext context, String? rank) =>
+    switch (rank?.toLowerCase()) {
   'excellent' => const Color(0xFF38BDF8),
   'good' => const Color(0xFF4ADE80),
   'medium' => const Color(0xFFFBBF24),
   'poor' => const Color(0xFFFB923C),
   'verypoor' => const Color(0xFFF87171),
-  _ => Colors.white38,
+  _ => context.appColors.ink(0.38),
 };
 
 String performanceLabel(String? rank) => switch (rank?.toLowerCase()) {
@@ -257,7 +258,7 @@ class _Card extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
       decoration: BoxDecoration(
-        color: const Color(0xE6151B23),
+        color: context.appColors.surface.withValues(alpha: 0.93),
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Column(
@@ -265,11 +266,11 @@ class _Card extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppText.label,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.8,
-              color: AppTheme.accent,
+              color: context.appColors.accent,
             ),
           ),
           const SizedBox(height: 10),
@@ -299,14 +300,14 @@ class _PerfRow extends StatelessWidget {
               platform,
               style: TextStyle(
                 fontSize: AppText.caption,
-                color: Colors.white.withValues(alpha: 0.5),
+                color: context.appColors.ink(0.5),
               ),
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: performanceColor(rank).withValues(alpha: 0.14),
+              color: performanceColor(context, rank).withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -314,7 +315,7 @@ class _PerfRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: AppText.caption,
                 fontWeight: FontWeight.w600,
-                color: performanceColor(rank),
+                color: performanceColor(context, rank),
               ),
             ),
           ),
@@ -348,14 +349,14 @@ class _InfoRow extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: AppText.caption,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: context.appColors.ink(0.4),
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: AppText.caption, color: Colors.white70),
+              style: TextStyle(fontSize: AppText.caption, color: context.appColors.ink(0.7)),
             ),
           ),
           if (copiable)
@@ -371,7 +372,7 @@ class _InfoRow extends StatelessWidget {
                 child: Icon(
                   Icons.copy_rounded,
                   size: 14,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: context.appColors.ink(0.4),
                 ),
               ),
             ),

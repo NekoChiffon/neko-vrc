@@ -26,13 +26,13 @@ class WorldListPage extends ConsumerWidget {
                 '这里还是空的',
                 style: TextStyle(
                   fontSize: AppText.caption,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: context.appColors.ink(0.4),
                 ),
               ),
             )
           : GridView.builder(
               padding: const EdgeInsets.all(12),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10,
@@ -58,8 +58,8 @@ class WorldListPage extends ConsumerWidget {
                             imageUrl: w.thumbnailImageUrl,
                             httpHeaders: headers,
                             fit: BoxFit.cover,
-                            errorWidget: (_, _, _) => const ColoredBox(
-                              color: AppTheme.surfaceHigh,
+                            errorWidget: (_, _, _) => ColoredBox(
+                              color: context.appColors.surfaceHigh,
                             ),
                           ),
                         ),

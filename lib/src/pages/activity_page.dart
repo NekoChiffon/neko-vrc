@@ -6,6 +6,7 @@ import '../core/location_parser.dart';
 import '../providers/friends_provider.dart';
 import '../services/presence_tracker.dart';
 import '../theme.dart';
+import '../widgets/frosted_app_bar.dart';
 import 'world_detail_page.dart';
 
 /// 动态的分类，和 VRCX 的分栏保持一致。
@@ -77,11 +78,17 @@ class ActivityPage extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: refresh,
-      color: AppTheme.accent,
-      backgroundColor: AppTheme.surfaceHigh,
+      color: context.appColors.accent,
+      backgroundColor: context.appColors.surfaceHigh,
+      // 下拉指示器别藏在毛玻璃顶栏后面。
+      edgeOffset: frostedAppBarInset(context),
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
+          // 顶部让出毛玻璃顶栏的高度，滚动时内容仍从模糊层下面穿过。
+          SliverToBoxAdapter(
+            child: SizedBox(height: frostedAppBarInset(context)),
+          ),
           if (friendFilter != null)
             SliverToBoxAdapter(
               child: _FriendFilterBar(
@@ -124,7 +131,12 @@ class ActivityPage extends ConsumerWidget {
               ),
             ],
           if (events.isNotEmpty)
-            const SliverToBoxAdapter(child: SizedBox(height: 28)),
+            SliverToBoxAdapter(
+              // 底部留出悬浮 dock 的高度。
+              child: SizedBox(
+                height: MediaQuery.paddingOf(context).bottom + 20,
+              ),
+            ),
         ],
       ),
     );
@@ -204,7 +216,7 @@ class _EmptyActivity extends StatelessWidget {
             Icon(
               failed ? Icons.cloud_off_outlined : Icons.timeline,
               size: 40,
-              color: Colors.white.withValues(alpha: failed ? 0.18 : 0.15),
+              color: context.appColors.ink(failed ? 0.18 : 0.15),
             ),
             const SizedBox(height: 14),
             Text(
@@ -212,7 +224,7 @@ class _EmptyActivity extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppText.secondary,
-                color: Colors.white.withValues(alpha: 0.45),
+                color: context.appColors.ink(0.45),
               ),
             ),
             const SizedBox(height: 8),
@@ -224,7 +236,7 @@ class _EmptyActivity extends StatelessWidget {
                 height: 1.7,
                 color: failed
                     ? const Color(0xFFF87171).withValues(alpha: 0.8)
-                    : Colors.white.withValues(alpha: 0.28),
+                    : context.appColors.ink(0.28),
               ),
             ),
             if (preview.isNotEmpty) ...[
@@ -237,7 +249,7 @@ class _EmptyActivity extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: AppText.label,
-                  color: AppTheme.accent.withValues(alpha: 0.7),
+                  color: context.appColors.accent.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -249,7 +261,7 @@ class _EmptyActivity extends StatelessWidget {
                 '立即刷新',
                 style: TextStyle(fontSize: AppText.caption),
               ),
-              style: TextButton.styleFrom(foregroundColor: AppTheme.accent),
+              style: TextButton.styleFrom(foregroundColor: context.appColors.accent),
             ),
           ],
         ),
@@ -287,7 +299,7 @@ class _EmptyFilter extends StatelessWidget {
             Icon(
               Icons.filter_list_off,
               size: 40,
-              color: Colors.white.withValues(alpha: 0.15),
+              color: context.appColors.ink(0.15),
             ),
             const SizedBox(height: 14),
             Text(
@@ -295,7 +307,7 @@ class _EmptyFilter extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppText.secondary,
-                color: Colors.white.withValues(alpha: 0.45),
+                color: context.appColors.ink(0.45),
               ),
             ),
             const SizedBox(height: 8),
@@ -305,13 +317,13 @@ class _EmptyFilter extends StatelessWidget {
               style: TextStyle(
                 fontSize: AppText.label,
                 height: 1.7,
-                color: Colors.white.withValues(alpha: 0.28),
+                color: context.appColors.ink(0.28),
               ),
             ),
             const SizedBox(height: 16),
             TextButton(
               onPressed: onShowAll,
-              style: TextButton.styleFrom(foregroundColor: AppTheme.accent),
+              style: TextButton.styleFrom(foregroundColor: context.appColors.accent),
               child: const Text(
                 '看全部动态',
                 style: TextStyle(fontSize: AppText.caption),
@@ -337,14 +349,14 @@ class ActivityFilterButton extends ConsumerWidget {
     // 包一层 Material：PopupMenuButton 的水波纹画在最近的 Material 上，
     // 没有这层的话点击会出现一个方形的灰色高亮，圆角胶囊变成方块。
     return Material(
-      color: AppTheme.surfaceHigh,
+      color: context.appColors.surfaceHigh,
       shape: const StadiumBorder(),
       clipBehavior: Clip.antiAlias,
       child: PopupMenuButton<ActivityFilter>(
         initialValue: filter,
         tooltip: '筛选动态',
         offset: const Offset(0, 38),
-        color: AppTheme.surfaceHigh,
+        color: context.appColors.surfaceHigh,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.card),
         ),
@@ -370,7 +382,7 @@ class ActivityFilterButton extends ConsumerWidget {
                       fontWeight: item == filter
                           ? FontWeight.w600
                           : FontWeight.w400,
-                      color: item == filter ? Colors.white : Colors.white70,
+                      color: item == filter ? Colors.white : context.appColors.ink(0.7),
                     ),
                   ),
                 ],
@@ -386,17 +398,17 @@ class ActivityFilterButton extends ConsumerWidget {
                 filter == ActivityFilter.all
                     ? '动态'
                     : '动态 · ${filter.label}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: AppText.body,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: context.appColors.ink(1),
                 ),
               ),
               const SizedBox(width: 2),
-              const Icon(
+              Icon(
                 Icons.keyboard_arrow_down,
                 size: 20,
-                color: Colors.white70,
+                color: context.appColors.ink(0.7),
               ),
             ],
           ),
@@ -419,21 +431,21 @@ class _FriendFilterBar extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 6, 16, 0),
       padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
       decoration: BoxDecoration(
-        color: AppTheme.accent.withValues(alpha: 0.1),
+        color: context.appColors.accent.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppRadius.field),
       ),
       child: Row(
         children: [
-          const Icon(Icons.person, size: 14, color: AppTheme.accent),
+          Icon(Icons.person, size: 14, color: context.appColors.accent),
           const SizedBox(width: 6),
           Expanded(
             child: Text(
               '只看 $name',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: AppText.caption,
-                color: AppTheme.accent,
+                color: context.appColors.accent,
               ),
             ),
           ),
@@ -442,7 +454,7 @@ class _FriendFilterBar extends StatelessWidget {
             style: TextButton.styleFrom(
               minimumSize: const Size(0, 30),
               padding: const EdgeInsets.symmetric(horizontal: 10),
-              foregroundColor: Colors.white.withValues(alpha: 0.5),
+              foregroundColor: context.appColors.ink(0.5),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: const Text('显示全部', style: TextStyle(fontSize: AppText.label)),
@@ -470,7 +482,7 @@ class _DayHeader extends StatelessWidget {
             style: TextStyle(
               fontSize: AppText.caption,
               fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.35),
+              color: context.appColors.ink(0.35),
             ),
           ),
           const Spacer(),
@@ -480,7 +492,7 @@ class _DayHeader extends StatelessWidget {
               style: TextButton.styleFrom(
                 minimumSize: const Size(0, 28),
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                foregroundColor: Colors.white.withValues(alpha: 0.35),
+                foregroundColor: context.appColors.ink(0.35),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: const Text(
@@ -501,7 +513,7 @@ class _EventRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final view = _describe(ref);
+    final view = _describe(context, ref);
     // 旧动态没存头像，用当前好友列表里的补上，升级后历史记录也能看到头像。
     final fallbackAvatar = ref.watch(
       friendsProvider.select((state) {
@@ -535,10 +547,10 @@ class _EventRow extends ConsumerWidget {
                             event.displayName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: AppText.body,
                               fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                              color: context.appColors.ink(1),
                             ),
                           ),
                         ),
@@ -547,7 +559,7 @@ class _EventRow extends ConsumerWidget {
                           _stamp(event.at),
                           style: TextStyle(
                             fontSize: AppText.label,
-                            color: Colors.white.withValues(alpha: 0.38),
+                            color: context.appColors.ink(0.38),
                           ),
                         ),
                       ],
@@ -570,7 +582,7 @@ class _EventRow extends ConsumerWidget {
                               fontSize: AppText.secondary,
                               height: 1.35,
                               fontWeight: FontWeight.w600,
-                              color: Colors.white.withValues(alpha: 0.9),
+                              color: context.appColors.ink(0.9),
                             ),
                           ),
                         ),
@@ -597,7 +609,7 @@ class _EventRow extends ConsumerWidget {
           height: 1,
           thickness: 1,
           indent: 76,
-          color: Colors.white.withValues(alpha: 0.05),
+          color: context.appColors.ink(0.05),
         ),
       ],
     );
@@ -614,7 +626,7 @@ class _EventRow extends ConsumerWidget {
     String? worldId,
     String? instanceId,
   })
-  _describe(WidgetRef ref) {
+  _describe(BuildContext context, WidgetRef ref) {
     switch (event.kind) {
       case PresenceKind.online:
         return (
@@ -638,7 +650,7 @@ class _EventRow extends ConsumerWidget {
         final statusDesc = event.statusDescription?.trim();
         return (
           icon: Icons.edit_note,
-          color: AppTheme.accent,
+          color: context.appColors.accent,
           action: '状态改为 ${event.note ?? '未知'}',
           detail: statusDesc == null || statusDesc.isEmpty ? null : statusDesc,
           worldId: null,
@@ -652,7 +664,7 @@ class _EventRow extends ConsumerWidget {
         if (worldId == null) {
           return (
             icon: Icons.place_outlined,
-            color: Colors.white38,
+            color: context.appColors.ink(0.38),
             action: '位置变化',
             detail: '位于私人房间',
             worldId: null,
@@ -664,7 +676,7 @@ class _EventRow extends ConsumerWidget {
         if (instanceId == null) {
           return (
             icon: Icons.place_outlined,
-            color: AppTheme.accentAlt,
+            color: context.appColors.accentAlt,
             action: '位置变化',
             detail: _locationDetail(_worldName(ref, worldId), event.note),
             worldId: null,
@@ -677,7 +689,7 @@ class _EventRow extends ConsumerWidget {
         if (loc.instanceType == InstancePrivacy.private) {
           return (
             icon: Icons.place_outlined,
-            color: Colors.white38,
+            color: context.appColors.ink(0.38),
             action: '位置变化',
             detail: '位于私人房间',
             worldId: null,
@@ -689,7 +701,7 @@ class _EventRow extends ConsumerWidget {
         final number = instanceId.split('~').first;
         return (
           icon: Icons.place_outlined,
-          color: AppTheme.accentAlt,
+          color: context.appColors.accentAlt,
           action: '位置变化',
           detail: [
             if (name != null && name.isNotEmpty) name,
@@ -767,7 +779,7 @@ class _EventDetail extends StatelessWidget {
         style: TextStyle(
           fontSize: AppText.secondary,
           height: 1.45,
-          color: Colors.white.withValues(alpha: 0.42),
+          color: context.appColors.ink(0.42),
         ),
       );
     }
@@ -794,7 +806,7 @@ class _EventDetail extends StatelessWidget {
                 style: TextStyle(
                   fontSize: AppText.secondary,
                   height: 1.45,
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: context.appColors.ink(0.55),
                 ),
               ),
             ),
@@ -802,7 +814,7 @@ class _EventDetail extends StatelessWidget {
             Icon(
               Icons.chevron_right,
               size: 14,
-              color: Colors.white.withValues(alpha: 0.3),
+              color: context.appColors.ink(0.3),
             ),
           ],
         ),
@@ -825,9 +837,9 @@ class _EventAvatar extends ConsumerWidget {
     final fallback = Container(
       width: _size,
       height: _size,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppTheme.surfaceHigh,
+        color: context.appColors.surfaceHigh,
       ),
       alignment: Alignment.center,
       child: Text(
@@ -835,7 +847,7 @@ class _EventAvatar extends ConsumerWidget {
         style: TextStyle(
           fontSize: AppText.body,
           fontWeight: FontWeight.w600,
-          color: Colors.white.withValues(alpha: 0.55),
+          color: context.appColors.ink(0.55),
         ),
       ),
     );

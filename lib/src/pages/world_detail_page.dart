@@ -42,7 +42,7 @@ class WorldDetailPage extends ConsumerWidget {
             SliverAppBar(
               expandedHeight: 220,
               pinned: true,
-              backgroundColor: AppTheme.canvas,
+              backgroundColor: context.appColors.canvas,
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
                   fit: StackFit.expand,
@@ -52,7 +52,7 @@ class WorldDetailPage extends ConsumerWidget {
                       httpHeaders: ref.watch(imageHeadersProvider),
                       fit: BoxFit.cover,
                       errorWidget: (_, _, _) =>
-                          const ColoredBox(color: AppTheme.surfaceHigh),
+                          ColoredBox(color: context.appColors.surfaceHigh),
                     ),
                     const DecoratedBox(
                       decoration: BoxDecoration(
@@ -89,7 +89,7 @@ class WorldDetailPage extends ConsumerWidget {
                       'by ${world.authorName}',
                       style: TextStyle(
                         fontSize: AppText.caption,
-                        color: Colors.white.withValues(alpha: 0.4),
+                        color: context.appColors.ink(0.4),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -153,9 +153,9 @@ class WorldDetailPage extends ConsumerWidget {
                             label: const Text('新建房间'),
                             style: FilledButton.styleFrom(
                               minimumSize: const Size.fromHeight(44),
-                              foregroundColor: AppTheme.accent,
+                              foregroundColor: context.appColors.accent,
                               backgroundColor:
-                                  AppTheme.accent.withValues(alpha: 0.10),
+                                  context.appColors.accent.withValues(alpha: 0.10),
                             ),
                           ),
                         ),
@@ -169,13 +169,13 @@ class WorldDetailPage extends ConsumerWidget {
                             width: 52,
                             height: 44,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.05),
+                              color: context.appColors.ink(0.05),
                               borderRadius: BorderRadius.circular(AppRadius.field),
                             ),
                             child: Icon(
                               Icons.more_horiz,
                               size: 20,
-                              color: Colors.white.withValues(alpha: 0.6),
+                              color: context.appColors.ink(0.6),
                             ),
                           ),
                         ),
@@ -221,14 +221,14 @@ class WorldDetailPage extends ConsumerWidget {
                                     vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.07),
+                                    color: context.appColors.ink(0.07),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
                                     t,
                                     style: TextStyle(
                                       fontSize: AppText.label,
-                                      color: Colors.white.withValues(alpha: 0.6),
+                                      color: context.appColors.ink(0.6),
                                     ),
                                   ),
                                 ),
@@ -318,16 +318,16 @@ class _MetricCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: context.appColors.ink(0.05),
         borderRadius: BorderRadius.circular(AppRadius.field),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: context.appColors.ink(0.05)),
       ),
       child: Column(
         children: [
           Icon(
             metric.icon,
             size: 17,
-            color: AppTheme.accent.withValues(alpha: 0.85),
+            color: context.appColors.accent.withValues(alpha: 0.85),
           ),
           const SizedBox(height: 6),
           FittedBox(
@@ -338,7 +338,7 @@ class _MetricCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: metric.dense ? AppText.caption : AppText.body,
                 fontWeight: FontWeight.w700,
-                color: Colors.white.withValues(alpha: 0.92),
+                color: context.appColors.ink(0.92),
               ),
             ),
           ),
@@ -349,7 +349,7 @@ class _MetricCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: AppText.label,
-              color: Colors.white.withValues(alpha: 0.38),
+              color: context.appColors.ink(0.38),
             ),
           ),
         ],
@@ -377,7 +377,7 @@ class _Section extends StatelessWidget {
             style: TextStyle(
               fontSize: AppText.caption,
               fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.35),
+              color: context.appColors.ink(0.35),
             ),
           ),
           const SizedBox(height: 8),
@@ -408,14 +408,14 @@ class _Row extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: AppText.caption,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: context.appColors.ink(0.4),
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: AppText.caption, color: Colors.white70),
+              style: TextStyle(fontSize: AppText.caption, color: context.appColors.ink(0.7)),
             ),
           ),
           if (copiable)
@@ -431,7 +431,7 @@ class _Row extends StatelessWidget {
                 child: Icon(
                   Icons.copy_rounded,
                   size: 14,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: context.appColors.ink(0.4),
                 ),
               ),
             ),
@@ -456,7 +456,7 @@ class _ErrorScaffold extends StatelessWidget {
           child: Text(
             message,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: AppText.secondary, color: Colors.white.withValues(alpha: 0.5)),
+            style: TextStyle(fontSize: AppText.secondary, color: context.appColors.ink(0.5)),
           ),
         ),
       ),
@@ -504,7 +504,7 @@ class _ActiveInstancesSection extends ConsumerWidget {
                 height: 13,
                 child: CircularProgressIndicator(
                   strokeWidth: 1.8,
-                  color: Colors.white.withValues(alpha: 0.3),
+                  color: context.appColors.ink(0.3),
                 ),
               ),
               const SizedBox(width: 10),
@@ -512,7 +512,7 @@ class _ActiveInstancesSection extends ConsumerWidget {
                 '查一下…',
                 style: TextStyle(
                   fontSize: AppText.caption,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: context.appColors.ink(0.35),
                 ),
               ),
             ],
@@ -526,7 +526,7 @@ class _ActiveInstancesSection extends ConsumerWidget {
               style: TextStyle(
                 fontSize: AppText.label,
                 height: 1.6,
-                color: Colors.white.withValues(alpha: 0.32),
+                color: context.appColors.ink(0.32),
               ),
             );
           }
@@ -563,12 +563,12 @@ class _InstanceRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: AppTheme.accent.withValues(alpha: 0.12),
+              color: context.appColors.accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
               loc.instanceType.label,
-              style: const TextStyle(fontSize: 10, color: AppTheme.accent),
+              style: TextStyle(fontSize: 10, color: context.appColors.accent),
             ),
           ),
           const SizedBox(width: 8),
@@ -576,7 +576,7 @@ class _InstanceRow extends StatelessWidget {
             capacity > 0 ? '${instance.nUsers}/$capacity 人' : '${instance.nUsers} 人',
             style: TextStyle(
               fontSize: AppText.caption,
-              color: Colors.white.withValues(alpha: full ? 0.35 : 0.65),
+              color: context.appColors.ink(full ? 0.35 : 0.65),
             ),
           ),
           const Spacer(),
@@ -594,7 +594,7 @@ class _InstanceRow extends StatelessWidget {
               child: Icon(
                 Icons.link_rounded,
                 size: 15,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: context.appColors.ink(0.4),
               ),
             ),
           ),
@@ -661,7 +661,7 @@ void _showCreateInstance(
 
   showModalBottomSheet<void>(
     context: context,
-    backgroundColor: AppTheme.surface,
+    backgroundColor: context.appColors.surface,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -680,12 +680,12 @@ void _showCreateInstance(
               padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
               decoration: BoxDecoration(
                 color: selected
-                    ? AppTheme.accent.withValues(alpha: 0.16)
-                    : Colors.white.withValues(alpha: 0.05),
+                    ? context.appColors.accent.withValues(alpha: 0.16)
+                    : context.appColors.ink(0.05),
                 borderRadius: BorderRadius.circular(AppRadius.card),
                 border: Border.all(
                   color: selected
-                      ? AppTheme.accent.withValues(alpha: 0.45)
+                      ? context.appColors.accent.withValues(alpha: 0.45)
                       : Colors.transparent,
                 ),
               ),
@@ -695,8 +695,8 @@ void _showCreateInstance(
                   fontSize: AppText.caption,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   color: selected
-                      ? AppTheme.accent
-                      : Colors.white.withValues(alpha: 0.55),
+                      ? context.appColors.accent
+                      : context.appColors.ink(0.55),
                 ),
               ),
             ),
@@ -711,7 +711,7 @@ void _showCreateInstance(
                   fontSize: AppText.label,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.8,
-                  color: AppTheme.accent,
+                  color: context.appColors.accent,
                 ),
               ),
             );
@@ -737,14 +737,14 @@ void _showCreateInstance(
                     worldName,
                     style: TextStyle(
                       fontSize: AppText.caption,
-                      color: Colors.white.withValues(alpha: 0.4),
+                      color: context.appColors.ink(0.4),
                     ),
                   ),
                   const SizedBox(height: 14),
                   Container(
                     padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: context.appColors.ink(0.05),
                       borderRadius: BorderRadius.circular(AppRadius.field),
                     ),
                     child: Row(
@@ -757,7 +757,7 @@ void _showCreateInstance(
                             style: TextStyle(
                               fontSize: AppText.label,
                               height: 1.5,
-                              color: Colors.white.withValues(alpha: 0.6),
+                              color: context.appColors.ink(0.6),
                             ),
                           ),
                         ),
@@ -770,7 +770,7 @@ void _showCreateInstance(
                           icon: Icon(
                             Icons.copy_rounded,
                             size: 16,
-                            color: Colors.white.withValues(alpha: 0.5),
+                            color: context.appColors.ink(0.5),
                           ),
                         ),
                       ],
@@ -812,9 +812,9 @@ void _showCreateInstance(
                           icon: const Icon(Icons.group_add_outlined, size: 16),
                           label: const Text('邀请好友'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white70,
+                            foregroundColor: context.appColors.ink(0.7),
                             side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.15),
+                              color: context.appColors.ink(0.15),
                             ),
                             minimumSize: const Size.fromHeight(44),
                           ),
@@ -845,7 +845,7 @@ void _showCreateInstance(
                   worldName,
                   style: TextStyle(
                     fontSize: AppText.caption,
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: context.appColors.ink(0.4),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -895,7 +895,7 @@ void _showCreateInstance(
                   style: TextStyle(
                     fontSize: AppText.label,
                     height: 1.6,
-                    color: Colors.white.withValues(alpha: 0.28),
+                    color: context.appColors.ink(0.28),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -926,7 +926,7 @@ void _showInviteFriends(BuildContext ctx, WidgetRef ref, String instanceId) {
 
   showModalBottomSheet<void>(
     context: ctx,
-    backgroundColor: AppTheme.surface,
+    backgroundColor: ctx.appColors.surface,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -985,7 +985,7 @@ void _showInviteFriends(BuildContext ctx, WidgetRef ref, String instanceId) {
                       value: checked,
                       onChanged: (_) => toggle(f.userId),
                       visualDensity: VisualDensity.compact,
-                      activeColor: AppTheme.accent,
+                      activeColor: ctx.appColors.accent,
                     ),
                     Expanded(
                       child: Text(
@@ -995,8 +995,8 @@ void _showInviteFriends(BuildContext ctx, WidgetRef ref, String instanceId) {
                         style: TextStyle(
                           fontSize: AppText.secondary,
                           color: f.isOnline
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.45),
+                              ? ctx.appColors.ink(1)
+                              : ctx.appColors.ink(0.45),
                         ),
                       ),
                     ),
@@ -1004,7 +1004,7 @@ void _showInviteFriends(BuildContext ctx, WidgetRef ref, String instanceId) {
                       f.isOnline ? '在线' : '离线',
                       style: TextStyle(
                         fontSize: AppText.label,
-                        color: Colors.white.withValues(alpha: 0.28),
+                        color: ctx.appColors.ink(0.28),
                       ),
                     ),
                   ],
@@ -1030,7 +1030,7 @@ void _showInviteFriends(BuildContext ctx, WidgetRef ref, String instanceId) {
                         if (selected.isNotEmpty)
                           Text(
                             '已选 ${selected.length} 人',
-                            style: TextStyle(fontSize: AppText.label, color: AppTheme.accent),
+                            style: TextStyle(fontSize: AppText.label, color: ctx.appColors.accent),
                           ),
                       ],
                     ),
@@ -1045,14 +1045,14 @@ void _showInviteFriends(BuildContext ctx, WidgetRef ref, String instanceId) {
                         hintText: '搜索好友昵称或 ID',
                         hintStyle: TextStyle(
                           fontSize: AppText.caption,
-                          color: Colors.white.withValues(alpha: 0.25),
+                          color: ctx.appColors.ink(0.25),
                         ),
                         counterStyle:
                             const TextStyle(fontSize: 1, color: Colors.transparent),
                         prefixIcon: Icon(
                           Icons.search,
                           size: 19,
-                          color: Colors.white.withValues(alpha: 0.4),
+                          color: ctx.appColors.ink(0.4),
                         ),
                         isDense: true,
                       ),
@@ -1065,7 +1065,7 @@ void _showInviteFriends(BuildContext ctx, WidgetRef ref, String instanceId) {
                               '没有匹配的好友',
                               style: TextStyle(
                                 fontSize: AppText.caption,
-                                color: Colors.white.withValues(alpha: 0.35),
+                                color: ctx.appColors.ink(0.35),
                               ),
                             ),
                           )
@@ -1116,7 +1116,7 @@ void _showWorldActions(BuildContext context, WidgetRef ref, String worldId) {
 
   showModalBottomSheet<void>(
     context: context,
-    backgroundColor: AppTheme.surface,
+    backgroundColor: context.appColors.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -1130,7 +1130,7 @@ void _showWorldActions(BuildContext context, WidgetRef ref, String worldId) {
             height: 4,
             margin: const EdgeInsets.only(top: 10, bottom: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
+              color: context.appColors.ink(0.15),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -1185,7 +1185,7 @@ class _WorldActionTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: Colors.white.withValues(alpha: 0.55)),
+            Icon(icon, size: 18, color: context.appColors.ink(0.55)),
             const SizedBox(width: 13),
             Expanded(
               child: Column(
@@ -1195,7 +1195,7 @@ class _WorldActionTile extends StatelessWidget {
                     label,
                     style: TextStyle(
                       fontSize: AppText.body,
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: context.appColors.ink(0.9),
                     ),
                   ),
                   if (hint != null) ...[
@@ -1204,7 +1204,7 @@ class _WorldActionTile extends StatelessWidget {
                       hint!,
                       style: TextStyle(
                         fontSize: AppText.label,
-                        color: Colors.white.withValues(alpha: 0.28),
+                        color: context.appColors.ink(0.28),
                       ),
                     ),
                   ],
@@ -1225,7 +1225,7 @@ void _showMyRoomsHistory(BuildContext context, WidgetRef ref) {
 
   showModalBottomSheet<void>(
     context: context,
-    backgroundColor: AppTheme.surface,
+    backgroundColor: context.appColors.surface,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -1264,7 +1264,7 @@ void _showMyRoomsHistory(BuildContext context, WidgetRef ref) {
                       hintText: '搜索实例 ID 或世界 ID',
                       hintStyle: TextStyle(
                         fontSize: AppText.caption,
-                        color: Colors.white.withValues(alpha: 0.25),
+                        color: context.appColors.ink(0.25),
                       ),
                       counterStyle: const TextStyle(
                         fontSize: 1,
@@ -1273,7 +1273,7 @@ void _showMyRoomsHistory(BuildContext context, WidgetRef ref) {
                       prefixIcon: Icon(
                         Icons.search,
                         size: 19,
-                        color: Colors.white.withValues(alpha: 0.4),
+                        color: context.appColors.ink(0.4),
                       ),
                       isDense: true,
                     ),
@@ -1292,7 +1292,7 @@ void _showMyRoomsHistory(BuildContext context, WidgetRef ref) {
                               style: TextStyle(
                                 fontSize: AppText.caption,
                                 height: 1.7,
-                                color: Colors.white.withValues(alpha: 0.35),
+                                color: context.appColors.ink(0.35),
                               ),
                             ),
                           ),
@@ -1304,7 +1304,7 @@ void _showMyRoomsHistory(BuildContext context, WidgetRef ref) {
                             height: 1,
                             indent: 16,
                             endIndent: 16,
-                            color: Colors.white.withValues(alpha: 0.05),
+                            color: context.appColors.ink(0.05),
                           ),
                           itemBuilder: (context, i) {
                             final e = visible[i];
@@ -1336,7 +1336,7 @@ void _showMyRoomsHistory(BuildContext context, WidgetRef ref) {
                                     Icon(
                                       Icons.meeting_room_outlined,
                                       size: 16,
-                                      color: Colors.white.withValues(alpha: 0.4),
+                                      color: context.appColors.ink(0.4),
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
@@ -1350,8 +1350,7 @@ void _showMyRoomsHistory(BuildContext context, WidgetRef ref) {
                                             style: TextStyle(
                                               fontSize: AppText.caption,
                                               height: 1.4,
-                                              color: Colors.white
-                                                  .withValues(alpha: 0.75),
+                                              color: context.appColors.ink(0.75),
                                             ),
                                           ),
                                           const SizedBox(height: 3),
@@ -1359,8 +1358,7 @@ void _showMyRoomsHistory(BuildContext context, WidgetRef ref) {
                                             date,
                                             style: TextStyle(
                                               fontSize: AppText.label,
-                                              color: Colors.white
-                                                  .withValues(alpha: 0.3),
+                                              color: context.appColors.ink(0.3),
                                             ),
                                           ),
                                         ],
@@ -1369,7 +1367,7 @@ void _showMyRoomsHistory(BuildContext context, WidgetRef ref) {
                                     Icon(
                                       Icons.copy_rounded,
                                       size: 14,
-                                      color: Colors.white.withValues(alpha: 0.3),
+                                      color: context.appColors.ink(0.3),
                                     ),
                                   ],
                                 ),
@@ -1415,7 +1413,7 @@ class _FavoriteEntry extends ConsumerWidget {
         decoration: BoxDecoration(
           color: isFavorite
               ? const Color(0xFFFBBF24).withValues(alpha: 0.14)
-              : Colors.white.withValues(alpha: 0.05),
+              : context.appColors.ink(0.05),
           borderRadius: BorderRadius.circular(AppRadius.field),
         ),
         child: Icon(
@@ -1423,7 +1421,7 @@ class _FavoriteEntry extends ConsumerWidget {
           size: 23,
           color: isFavorite
               ? const Color(0xFFFBBF24)
-              : Colors.white.withValues(alpha: 0.6),
+              : context.appColors.ink(0.6),
         ),
       ),
     );
@@ -1454,7 +1452,7 @@ void _showGroupPicker(
 
   showModalBottomSheet<void>(
     context: context,
-    backgroundColor: AppTheme.surface,
+    backgroundColor: context.appColors.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -1492,7 +1490,7 @@ void _showGroupPicker(
             leading: Icon(
               Icons.folder_outlined,
               size: 20,
-              color: AppTheme.accent.withValues(alpha: 0.8),
+              color: context.appColors.accent.withValues(alpha: 0.8),
             ),
             title: Text(
               favoriteGroupLabel(g),
@@ -1500,19 +1498,19 @@ void _showGroupPicker(
                 fontSize: AppText.body,
                 fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
                 color: isCurrent
-                    ? AppTheme.accent
-                    : Colors.white.withValues(alpha: 0.85),
+                    ? context.appColors.accent
+                    : context.appColors.ink(0.85),
               ),
             ),
             subtitle: Text(
               '${counts[g.name] ?? 0} 个世界',
               style: TextStyle(
                 fontSize: AppText.label,
-                color: Colors.white.withValues(alpha: 0.35),
+                color: context.appColors.ink(0.35),
               ),
             ),
             trailing: isCurrent
-                ? Icon(Icons.check_circle, size: 18, color: AppTheme.accent)
+                ? Icon(Icons.check_circle, size: 18, color: context.appColors.accent)
                 : null,
             onTap: busy ? null : () => pick(g),
           );
@@ -1529,7 +1527,7 @@ void _showGroupPicker(
                 height: 4,
                 margin: const EdgeInsets.only(top: 10, bottom: 10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
+                  color: context.appColors.ink(0.15),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1540,7 +1538,7 @@ void _showGroupPicker(
                   style: TextStyle(
                     fontSize: AppText.body,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: context.appColors.ink(0.9),
                   ),
                 ),
               ),
@@ -1562,7 +1560,7 @@ void _showGroupPicker(
                     '没有可用的收藏夹',
                     style: TextStyle(
                       fontSize: AppText.caption,
-                      color: Colors.white.withValues(alpha: 0.35),
+                      color: context.appColors.ink(0.35),
                     ),
                   ),
                 )
@@ -1626,9 +1624,9 @@ class _InvitedInstanceCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
-        color: AppTheme.accent.withValues(alpha: 0.07),
+        color: context.appColors.accent.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.25)),
+        border: Border.all(color: context.appColors.accent.withValues(alpha: 0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1639,7 +1637,7 @@ class _InvitedInstanceCard extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppTheme.accent.withValues(alpha: 0.18),
+                    color: context.appColors.accent.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(5),
                   ),
                   child: Text(
@@ -1647,7 +1645,7 @@ class _InvitedInstanceCard extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: AppText.label,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.accent,
+                      color: context.appColors.accent,
                     ),
                   ),
                 ),
@@ -1658,7 +1656,7 @@ class _InvitedInstanceCard extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: AppText.label,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: context.appColors.ink(0.45),
                   ),
                 ),
               ],
@@ -1669,7 +1667,7 @@ class _InvitedInstanceCard extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: AppText.caption,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: context.appColors.ink(0.8),
                   ),
                 ),
               ),
@@ -1677,7 +1675,7 @@ class _InvitedInstanceCard extends ConsumerWidget {
                 '$count/$capacity',
                 style: TextStyle(
                   fontSize: AppText.label,
-                  color: Colors.white.withValues(alpha: 0.45),
+                  color: context.appColors.ink(0.45),
                 ),
               ),
             ],
@@ -1719,8 +1717,8 @@ class _InvitedInstanceCard extends ConsumerWidget {
                   ),
                 ),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.accent,
-                  backgroundColor: AppTheme.accent.withValues(alpha: 0.12),
+                  foregroundColor: context.appColors.accent,
+                  backgroundColor: context.appColors.accent.withValues(alpha: 0.12),
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   minimumSize: const Size(0, 32),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1827,13 +1825,13 @@ class _MemberTile extends ConsumerWidget {
                   width: 40,
                   height: 40,
                   child: avatar.isEmpty
-                      ? const ColoredBox(color: AppTheme.surfaceHigh)
+                      ? ColoredBox(color: context.appColors.surfaceHigh)
                       : CachedNetworkImage(
                           imageUrl: avatar,
                           httpHeaders: ref.watch(imageHeadersProvider),
                           fit: BoxFit.cover,
                           errorWidget: (_, _, _) =>
-                              const ColoredBox(color: AppTheme.surfaceHigh),
+                              ColoredBox(color: context.appColors.surfaceHigh),
                         ),
                 ),
               ),
@@ -1874,7 +1872,7 @@ class _MemberTile extends ConsumerWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: AppText.label,
-              color: Colors.white.withValues(alpha: 0.6),
+              color: context.appColors.ink(0.6),
             ),
           ),
         ],
@@ -1938,7 +1936,7 @@ class _InstanceOwner extends ConsumerWidget {
           style: TextStyle(
             fontSize: AppText.label,
             fontWeight: FontWeight.w700,
-            color: Colors.white.withValues(alpha: 0.4),
+            color: context.appColors.ink(0.4),
           ),
         ),
         const SizedBox(width: 8),
@@ -1950,13 +1948,13 @@ class _InstanceOwner extends ConsumerWidget {
                 width: 24,
                 height: 24,
                 child: icon.isEmpty
-                    ? const ColoredBox(color: AppTheme.surfaceHigh)
+                    ? ColoredBox(color: context.appColors.surfaceHigh)
                     : CachedNetworkImage(
                         imageUrl: icon,
                         httpHeaders: ref.watch(imageHeadersProvider),
                         fit: BoxFit.cover,
                         errorWidget: (_, _, _) =>
-                            const ColoredBox(color: AppTheme.surfaceHigh),
+                            ColoredBox(color: context.appColors.surfaceHigh),
                       ),
               ),
             ),
@@ -1991,7 +1989,7 @@ class _InstanceOwner extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: AppText.label,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: context.appColors.ink(0.8),
                   ),
                 ),
               ),
@@ -2020,7 +2018,7 @@ class _InstanceOwner extends ConsumerWidget {
                   friend.isOnline ? '好友 · 其他房间' : '好友 · 离线',
                   style: TextStyle(
                     fontSize: 9,
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: context.appColors.ink(0.3),
                   ),
                 ),
               ],
@@ -2051,7 +2049,7 @@ class _ExpandableTextState extends State<_ExpandableText> {
     final style = TextStyle(
       fontSize: AppText.secondary,
       height: 1.65,
-      color: Colors.white.withValues(alpha: 0.8),
+      color: context.appColors.ink(0.8),
     );
 
     return LayoutBuilder(
@@ -2091,13 +2089,13 @@ class _ExpandableTextState extends State<_ExpandableText> {
                     style: TextStyle(
                       fontSize: AppText.caption,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.accent,
+                      color: context.appColors.accent,
                     ),
                   ),
                   Icon(
                     _expanded ? Icons.expand_less : Icons.expand_more,
                     size: 15,
-                    color: AppTheme.accent,
+                    color: context.appColors.accent,
                   ),
                 ],
               ),

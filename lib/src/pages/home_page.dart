@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,13 +14,16 @@ import '../providers/my_rooms_history.dart';
 import '../providers/friends_provider.dart';
 import '../theme.dart';
 import '../widgets/friend_tile.dart';
+import '../widgets/frosted_app_bar.dart';
 import '../widgets/status_sheet.dart';
 import '../widgets/profile_view.dart';
 import '../widgets/motion.dart';
 import '../widgets/skeleton.dart';
 import 'activity_page.dart';
 import 'friend_detail_page.dart';
+import 'inventory_page.dart';
 import 'notifications_page.dart';
+import 'player_manage_page.dart';
 import 'settings_page.dart';
 import 'search_page.dart';
 
@@ -65,11 +69,13 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
   /// VRChat 只给「当前状态」，手机端也没有桌面端那种游戏日志，所以动态只能靠
   /// 「定时取快照 + 对比差异」。Pipeline 正常时事件已经实时记下，这里只是兜底；
   /// Pipeline 没连上（弱网、被拦、token 过期）时，轮询仍然能产生动态。
-  void _startPolling() {
+  void _startPolling({bool background = false}) {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-      ref.read(friendsProvider.notifier).refresh(silent: true);
-    });
+    // 后台把间隔拉长，能提醒到就行，别一直耗电。
+    _pollTimer = Timer.periodic(
+      Duration(seconds: background ? 180 : 60),
+      (_) => ref.read(friendsProvider.notifier).refresh(silent: true),
+    );
   }
 
   void _stopPolling() {
@@ -100,8 +106,9 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
       ref.read(friendsProvider.notifier).refresh();
       _startPolling();
     } else if (state == AppLifecycleState.paused) {
-      // 后台不轮询，省电也避免无谓请求。
-      _stopPolling();
+      // 退到后台也继续轮询，尽量让上下线 / 好友申请提醒不断。
+      // 系统随时可能冻结进程，所以这是尽力而为，不是常驻后台服务。
+      _startPolling(background: true);
     }
   }
 
@@ -118,9 +125,8 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
             .length ??
         0;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: switch (_index) {
+    final appBar = FrostedAppBar(
+      title: switch (_index) {
           0 => Row(
               children: [
                 const Text('好友'),
@@ -131,7 +137,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
                     style: TextStyle(
                       fontSize: AppText.caption,
                       fontWeight: FontWeight.w400,
-                      color: Colors.white.withValues(alpha: 0.4),
+                      color: context.appColors.ink(0.4),
                     ),
                   ),
               ],
@@ -212,12 +218,100 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               ),
               icon: const Icon(Icons.settings_outlined),
             ),
-            IconButton(
-              tooltip: '相册',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const AlbumPage()),
+            // 相册 + 玩家管理收进一颗菜单按钮，顶栏不至于越加越挤。
+            PopupMenuButton<String>(
+              tooltip: '更多',
+              // 去掉默认的 8px 内边距，圆钮才能和右侧其它按钮对齐。
+              padding: EdgeInsets.zero,
+              offset: const Offset(0, 46),
+              color: context.appColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.card),
               ),
-              icon: const Icon(Icons.photo_library_outlined),
+              onSelected: (value) {
+                if (value == 'album') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const AlbumPage()),
+                  );
+                } else if (value == 'players') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const PlayerManagePage(),
+                    ),
+                  );
+                } else if (value == 'inventory') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const InventoryPage()),
+                  );
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'album',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.photo_library_outlined,
+                        size: 18,
+                        color: context.appColors.ink(0.7),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text('相册'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'inventory',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 18,
+                        color: context.appColors.ink(0.7),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text('库存'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'players',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.shield_outlined,
+                        size: 18,
+                        color: context.appColors.ink(0.7),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text('玩家管理'),
+                    ],
+                  ),
+                ),
+              ],
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: context.appColors.surface,
+                  border: Border.all(color: context.appColors.ink(0.06)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(
+                        alpha: context.appColors.isDark ? 0.4 : 0.18,
+                      ),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.more_horiz,
+                  size: 20,
+                  color: context.appColors.ink(0.85),
+                ),
+              ),
             ),
             IconButton(
               tooltip: '分享主页链接',
@@ -232,14 +326,31 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
             ),
           ],
         ],
-      ),
-      body: IndexedStack(
-        index: _index,
-        children: const [
-          _FriendsTab(),
-          SearchPage(),
-          ActivityPage(),
-          _MeTab(),
+    );
+
+    return Scaffold(
+      // 内容延伸到悬浮 dock 下面，滑动时从毛玻璃里穿过去。
+      extendBody: true,
+      // 顶栏作为 overlay 放在 body 的 Stack 顶层，而不是塞进 appBar 槽：
+      // 1) 模糊层直接采样下方内容，效果稳定；
+      // 2) 不会篡改 body 的 MediaQuery 内边距（之前「我」页横幅被顶掉的原因）。
+      body: Stack(
+        children: [
+          IndexedStack(
+            index: _index,
+            children: const [
+              _FriendsTab(),
+              SearchPage(),
+              ActivityPage(),
+              _MeTab(),
+            ],
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: appBar,
+          ),
         ],
       ),
       bottomNavigationBar: _BottomDock(
@@ -257,12 +368,17 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
     if (i == 3) _refreshMeAndDetail();
   }
 
-  /// 动态页「只看某个好友」：从已经出现过的好友里选一个。
+  /// 动态页「只看某个好友」：从已经出现过的好友里选一个，带头像和搜索。
   void _showActivityFriendPicker(BuildContext context, WidgetRef ref) {
     final events = ref.read(presenceEventsProvider);
+    final friends = ref.read(friendsProvider).friends;
+    final avatarById = {for (final f in friends) f.userId: f.avatarUrl};
+
     final names = <String, String>{};
+    final avatars = <String, String?>{};
     for (final e in events) {
       names.putIfAbsent(e.userId, () => e.displayName);
+      avatars.putIfAbsent(e.userId, () => e.avatarUrl ?? avatarById[e.userId]);
     }
     if (names.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -275,89 +391,193 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
       ..sort(
         (a, b) => a.value.toLowerCase().compareTo(b.value.toLowerCase()),
       );
+    final headers = ref.read(imageHeadersProvider);
 
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.appColors.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => SafeArea(
-        top: false,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(ctx).height * 0.6,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(top: 10, bottom: 8),
+      builder: (ctx) {
+        var query = '';
+        return StatefulBuilder(
+          builder: (ctx, setSheet) {
+            final q = query.trim().toLowerCase();
+            final filtered = entries
+                .where((e) => q.isEmpty || e.value.toLowerCase().contains(q))
+                .toList();
+
+            Widget avatar(String? url, String name) {
+              const size = 34.0;
+              final fallback = Container(
+                width: size,
+                height: size,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(2),
+                  shape: BoxShape.circle,
+                  color: ctx.appColors.surfaceHigh,
                 ),
-              ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 4, 20, 8),
-                child: Row(
+                child: Text(
+                  name.isEmpty ? '?' : name.substring(0, 1).toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: ctx.appColors.ink(0.6),
+                  ),
+                ),
+              );
+              if (url == null || url.isEmpty) return fallback;
+              return SizedBox(
+                width: size,
+                height: size,
+                child: ClipOval(
+                  child: CachedNetworkImage(
+                    imageUrl: url,
+                    httpHeaders: headers,
+                    fit: BoxFit.cover,
+                    placeholder: (_, _) => fallback,
+                    errorWidget: (_, _, _) => fallback,
+                  ),
+                ),
+              );
+            }
+
+            return SafeArea(
+              top: false,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(ctx).height * 0.72,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.person_search_outlined,
-                        size: 16, color: AppTheme.accent),
-                    SizedBox(width: 8),
-                    Text(
-                      '只看某个好友的动态',
-                      style: TextStyle(
-                        fontSize: AppText.secondary,
-                        fontWeight: FontWeight.w600,
+                    Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.only(top: 10, bottom: 8),
+                      decoration: BoxDecoration(
+                        color: ctx.appColors.ink(0.15),
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.groups_outlined, size: 20),
-                      title: const Text(
-                        '全部好友',
-                        style: TextStyle(fontSize: AppText.secondary),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.person_search_outlined,
+                            size: 16,
+                            color: ctx.appColors.accent,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '只看某个好友的动态',
+                            style: TextStyle(
+                              fontSize: AppText.secondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                      onTap: () {
-                        ref.read(activityFriendFilterProvider.notifier).state =
-                            null;
-                        Navigator.pop(ctx);
-                      },
                     ),
-                    for (final e in entries)
-                      ListTile(
-                        leading: const Icon(Icons.person_outline, size: 20),
-                        title: Text(
-                          e.value,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: AppText.secondary),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: TextField(
+                        textInputAction: TextInputAction.search,
+                        onChanged: (v) => setSheet(() => query = v),
+                        style: const TextStyle(fontSize: AppText.secondary),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          hintText: '搜好友名字',
+                          hintStyle: TextStyle(
+                            fontSize: AppText.caption,
+                            color: ctx.appColors.ink(0.3),
+                          ),
+                          prefixIcon: const Icon(Icons.search, size: 18),
+                          prefixIconConstraints:
+                              const BoxConstraints(minWidth: 38),
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 10),
                         ),
-                        onTap: () {
-                          ref
-                                  .read(activityFriendFilterProvider.notifier)
-                                  .state =
-                              (userId: e.key, displayName: e.value);
-                          Navigator.pop(ctx);
-                        },
                       ),
+                    ),
+                    Flexible(
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: [
+                          ListTile(
+                            leading: Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: ctx.appColors.ink(0.05),
+                              ),
+                              child: Icon(
+                                Icons.groups_outlined,
+                                size: 19,
+                                color: ctx.appColors.ink(0.6),
+                              ),
+                            ),
+                            title: const Text(
+                              '全部好友',
+                              style: TextStyle(fontSize: AppText.secondary),
+                            ),
+                            onTap: () {
+                              ref
+                                  .read(activityFriendFilterProvider.notifier)
+                                  .state = null;
+                              Navigator.pop(ctx);
+                            },
+                          ),
+                          for (final e in filtered)
+                            ListTile(
+                              leading: avatar(avatars[e.key], e.value),
+                              title: Text(
+                                e.value,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: AppText.secondary,
+                                ),
+                              ),
+                              onTap: () {
+                                ref
+                                    .read(
+                                      activityFriendFilterProvider.notifier,
+                                    )
+                                    .state = (
+                                  userId: e.key,
+                                  displayName: e.value,
+                                );
+                                Navigator.pop(ctx);
+                              },
+                            ),
+                          if (filtered.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Center(
+                                child: Text(
+                                  '没有匹配的好友',
+                                  style: TextStyle(
+                                    fontSize: AppText.caption,
+                                    color: ctx.appColors.ink(0.4),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -419,6 +639,7 @@ class _BottomDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final inset = MediaQuery.viewPaddingOf(context).bottom;
+    final radius = BorderRadius.circular(31);
 
     return Container(
       color: Colors.transparent,
@@ -429,12 +650,12 @@ class _BottomDock extends StatelessWidget {
             child: Container(
               height: 62,
               decoration: BoxDecoration(
-                color: const Color(0xF2151B23),
-                borderRadius: BorderRadius.circular(31),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                color: context.appColors.surface,
+                borderRadius: radius,
+                border: Border.all(color: context.appColors.ink(0.06)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
+                    color: Colors.black.withValues(alpha: 0.22),
                     blurRadius: 18,
                     offset: const Offset(0, 8),
                   ),
@@ -495,7 +716,7 @@ class _DockItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppTheme.accent : Colors.white.withValues(alpha: 0.52);
+    final color = selected ? context.appColors.accent : context.appColors.ink(0.52);
 
     return Expanded(
       child: GestureDetector(
@@ -510,7 +731,7 @@ class _DockItem extends StatelessWidget {
               height: 28,
               decoration: BoxDecoration(
                 color: selected
-                    ? AppTheme.accent.withValues(alpha: 0.16)
+                    ? context.appColors.accent.withValues(alpha: 0.16)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -545,21 +766,22 @@ class _DockSearchButton extends StatelessWidget {
       message: '查找',
       child: GestureDetector(
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+        child: Container(
           width: 62,
           height: 62,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: selected ? AppTheme.accent : const Color(0xF2151B23),
+            color: selected
+                ? context.appColors.accent
+                : context.appColors.surface,
             border: Border.all(
               color: selected
-                  ? AppTheme.accent
-                  : Colors.white.withValues(alpha: 0.06),
+                  ? context.appColors.accent
+                  : context.appColors.ink(0.06),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
+                color: Colors.black.withValues(alpha: 0.22),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -568,7 +790,9 @@ class _DockSearchButton extends StatelessWidget {
           child: Icon(
             Icons.search,
             size: 26,
-            color: selected ? AppTheme.canvas : Colors.white.withValues(alpha: 0.72),
+            color: selected
+                ? context.appColors.canvas
+                : context.appColors.ink(0.72),
           ),
         ),
       ),
@@ -627,7 +851,10 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
     final state = ref.watch(friendsProvider);
 
     if (state.friends.isEmpty && state.loading) {
-      return const FriendListSkeleton();
+      return Padding(
+        padding: EdgeInsets.only(top: frostedAppBarInset(context)),
+        child: const FriendListSkeleton(),
+      );
     }
 
     if (state.friends.isEmpty) {
@@ -635,7 +862,10 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
         onRefresh: () => ref.read(friendsProvider.notifier).refresh(),
         child: ListView(
           children: [
-            SizedBox(height: MediaQuery.of(context).size.height * 0.24),
+            SizedBox(
+              height: frostedAppBarInset(context) +
+                  MediaQuery.of(context).size.height * 0.24,
+            ),
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -644,7 +874,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
                     Icon(
                       state.error != null ? Icons.cloud_off : Icons.pets,
                       size: 44,
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: context.appColors.ink(0.2),
                     ),
                     const SizedBox(height: 14),
                     Text(
@@ -653,7 +883,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
                       style: TextStyle(
                         fontSize: AppText.secondary,
                         height: 1.6,
-                        color: Colors.white.withValues(alpha: 0.45),
+                        color: context.appColors.ink(0.45),
                       ),
                     ),
                   ],
@@ -700,6 +930,8 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
 
     return Column(
       children: [
+        // 让出毛玻璃顶栏的高度，滚动时内容仍会从模糊层下面穿过。
+        SizedBox(height: frostedAppBarInset(context)),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           child: TextField(
@@ -714,7 +946,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
               hintText: '搜好友名字',
               hintStyle: TextStyle(
                 fontSize: AppText.secondary,
-                color: Colors.white.withValues(alpha: 0.3),
+                color: context.appColors.ink(0.3),
               ),
               prefixIcon: const Icon(Icons.search, size: 18),
               prefixIconConstraints: const BoxConstraints(minWidth: 38),
@@ -740,7 +972,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
                 Icon(
                   Icons.folder_outlined,
                   size: 13,
-                  color: AppTheme.accent.withValues(alpha: 0.8),
+                  color: context.appColors.accent.withValues(alpha: 0.8),
                 ),
                 const SizedBox(width: 6),
                 Expanded(
@@ -750,7 +982,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: AppText.label,
-                      color: AppTheme.accent.withValues(alpha: 0.85),
+                      color: context.appColors.accent.withValues(alpha: 0.85),
                     ),
                   ),
                 ),
@@ -759,7 +991,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
                   child: Icon(
                     Icons.close,
                     size: 14,
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: context.appColors.ink(0.4),
                   ),
                 ),
               ],
@@ -794,8 +1026,8 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
                   Icons.menu,
                   size: 19,
                   color: (hiddenKinds.isEmpty && _favoriteGroup == null)
-                      ? Colors.white.withValues(alpha: 0.55)
-                      : AppTheme.accent,
+                      ? context.appColors.ink(0.55)
+                      : context.appColors.accent,
                 ),
               ),
             ),
@@ -816,7 +1048,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
                           favKey != null ? '这个收藏夹里没有好友' : '没有匹配的好友',
                           style: TextStyle(
                             fontSize: AppText.caption,
-                            color: Colors.white.withValues(alpha: 0.4),
+                            color: context.appColors.ink(0.4),
                           ),
                         ),
                 )
@@ -824,7 +1056,10 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
                   onRefresh: () => ref.read(friendsProvider.notifier).refresh(),
                   child: ListView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 24),
+                    // 底部留出悬浮 dock 的高度，最后一行不会被盖住。
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.paddingOf(context).bottom + 16,
+                    ),
                     itemCount: groups.length,
                     itemBuilder: (context, i) {
                       final group = groups[i];
@@ -857,7 +1092,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
   void _showGroupSettings(BuildContext context, WidgetRef ref) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.appColors.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -894,8 +1129,8 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
                           : Icons.radio_button_unchecked,
                       size: 18,
                       color: selected
-                          ? AppTheme.accent
-                          : Colors.white.withValues(alpha: 0.25),
+                          ? context.appColors.accent
+                          : context.appColors.ink(0.25),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -908,7 +1143,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
                           fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                           color: selected
                               ? Colors.white
-                              : Colors.white.withValues(alpha: 0.7),
+                              : context.appColors.ink(0.7),
                         ),
                       ),
                     ),
@@ -917,7 +1152,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
                         '$count',
                         style: TextStyle(
                           fontSize: AppText.caption,
-                          color: Colors.white.withValues(alpha: 0.35),
+                          color: context.appColors.ink(0.35),
                         ),
                       ),
                   ],
@@ -941,7 +1176,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
                         fontSize: AppText.caption,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.8,
-                        color: AppTheme.accent.withValues(alpha: 0.9),
+                        color: context.appColors.accent.withValues(alpha: 0.9),
                       ),
                     ),
                   ),
@@ -952,7 +1187,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
                         '正在读取收藏夹…',
                         style: TextStyle(
                           fontSize: AppText.caption,
-                          color: Colors.white.withValues(alpha: 0.35),
+                          color: context.appColors.ink(0.35),
                         ),
                       ),
                     ),
@@ -979,11 +1214,11 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
           padding: const EdgeInsets.symmetric(horizontal: 11),
           decoration: BoxDecoration(
             color: active
-                ? AppTheme.accent.withValues(alpha: 0.16)
-                : Colors.white.withValues(alpha: 0.05),
+                ? context.appColors.accent.withValues(alpha: 0.16)
+                : context.appColors.ink(0.05),
             borderRadius: BorderRadius.circular(AppRadius.card),
             border: Border.all(
-              color: active ? AppTheme.accent.withValues(alpha: 0.45) : Colors.transparent,
+              color: active ? context.appColors.accent.withValues(alpha: 0.45) : Colors.transparent,
             ),
           ),
           child: Text(
@@ -991,7 +1226,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
             style: TextStyle(
               fontSize: AppText.label,
               fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-              color: active ? AppTheme.accent : Colors.white.withValues(alpha: 0.5),
+              color: active ? context.appColors.accent : context.appColors.ink(0.5),
             ),
           ),
         ),
@@ -1040,7 +1275,7 @@ class _GroupHeader extends ConsumerWidget {
                 ? Icons.language
                 : Icons.meeting_room_outlined,
             size: 13,
-            color: AppTheme.accent.withValues(alpha: 0.7),
+            color: context.appColors.accent.withValues(alpha: 0.7),
           ),
           const SizedBox(width: 7),
           Flexible(
@@ -1051,7 +1286,7 @@ class _GroupHeader extends ConsumerWidget {
               style: TextStyle(
                 fontSize: AppText.secondary,
                 fontWeight: FontWeight.w600,
-                color: Colors.white.withValues(alpha: 0.85),
+                color: context.appColors.ink(0.85),
               ),
             ),
           ),
@@ -1060,7 +1295,7 @@ class _GroupHeader extends ConsumerWidget {
             '${group.members.length} 人',
             style: TextStyle(
               fontSize: AppText.label,
-              color: Colors.white.withValues(alpha: 0.32),
+              color: context.appColors.ink(0.32),
             ),
           ),
         ],
@@ -1093,10 +1328,16 @@ class _MeTab extends ConsumerWidget {
         await ref.read(authProvider.notifier).refreshMe();
         ref.invalidate(userDetailProvider(auth.user.id));
       },
+      // 下拉指示器别藏在毛玻璃顶栏后面。
+      edgeOffset: frostedAppBarInset(context),
       child: ProfileView(
         userId: auth.user.id,
         showBackButton: false,
         selfMode: true,
+        topInset: frostedAppBarInset(context),
+        footer: [
+          SizedBox(height: MediaQuery.paddingOf(context).bottom + 12),
+        ],
         onOpenSettings: () => Navigator.of(context).push(
           MaterialPageRoute<void>(builder: (_) => const SettingsPage()),
         ),

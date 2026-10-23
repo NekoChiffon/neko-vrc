@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'src/pages/home_page.dart';
 import 'src/pages/login_page.dart';
 import 'src/pages/welcome_page.dart';
+import 'src/providers/appearance.dart';
 import 'src/providers/friends_provider.dart';
 import 'src/theme.dart';
 
@@ -31,15 +32,15 @@ class _NekoVrcAppState extends ConsumerState<NekoVrcApp> {
     return MaterialApp(
       title: 'Neko VRC',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark(),
+      theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.dark,
+      themeMode: ref.watch(appearanceProvider),
       home: switch (auth) {
         AuthUnknown() => const _SplashPage(),
         AuthSignedOut() || AuthAwaitingTwoFactor() => const LoginPage(),
         AuthSignedIn(:final user) => ref.watch(welcomePendingProvider)
             ? WelcomePage(user: user)
-            : const HomePage(),
+            : HomePage(),
       },
     );
   }
@@ -59,10 +60,10 @@ class _SplashPage extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppTheme.accent.withValues(alpha: 0.1),
+                color: context.appColors.accent.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.pets, size: 22, color: AppTheme.accent),
+              child: Icon(Icons.pets, size: 22, color: context.appColors.accent),
             ),
             const SizedBox(height: 14),
             const Text(
@@ -77,8 +78,8 @@ class _SplashPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
                 child: LinearProgressIndicator(
                   minHeight: 2,
-                  backgroundColor: Colors.white.withValues(alpha: 0.06),
-                  color: Colors.white.withValues(alpha: 0.22),
+                  backgroundColor: context.appColors.ink(0.06),
+                  color: context.appColors.ink(0.22),
                 ),
               ),
             ),
@@ -87,7 +88,7 @@ class _SplashPage extends StatelessWidget {
               '正在检查登录状态',
               style: TextStyle(
                 fontSize: AppText.label,
-                color: Colors.white.withValues(alpha: 0.28),
+                color: context.appColors.ink(0.28),
               ),
             ),
           ],

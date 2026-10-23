@@ -54,12 +54,12 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                     width: 88,
                     height: 88,
                     child: avatar.isEmpty
-                        ? const ColoredBox(color: AppTheme.surfaceHigh)
+                        ? ColoredBox(color: context.appColors.surfaceHigh)
                         : CachedNetworkImage(
                             imageUrl: avatar,
                             fit: BoxFit.cover,
                             errorWidget: (_, _, _) =>
-                                const ColoredBox(color: AppTheme.surfaceHigh),
+                                ColoredBox(color: context.appColors.surfaceHigh),
                           ),
                   ),
                 ),
@@ -82,7 +82,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                   '已登录',
                   style: TextStyle(
                     fontSize: AppText.caption,
-                    color: Colors.white.withValues(alpha: 0.35),
+                    color: context.appColors.ink(0.35),
                   ),
                 ),
                 const SizedBox(height: 36),
@@ -90,7 +90,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                   '正在进入主页',
                   style: TextStyle(
                     fontSize: AppText.label,
-                    color: Colors.white.withValues(alpha: 0.22),
+                    color: context.appColors.ink(0.22),
                   ),
                 ),
               ],

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vrchat_dart/vrchat_dart.dart';
 
+import '../core/vrc_client.dart';
 import '../models/album_file.dart';
 import '../models/app_notification.dart';
 import 'friends_provider.dart';
@@ -317,6 +318,11 @@ class NotificationDetailCache
     state = {...state, id: details};
   }
 }
+
+/// 屏蔽 / 禁言记录。
+final playerModerationsProvider = FutureProvider<List<PlayerModerationRecord>>(
+  (ref) => ref.read(vrcClientProvider).fetchPlayerModerations(),
+);
 
 /// 通知列表。
 ///

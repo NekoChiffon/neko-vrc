@@ -10,6 +10,7 @@ import '../providers/discovery_provider.dart';
 import '../providers/friends_provider.dart';
 import '../services/search_history.dart';
 import '../theme.dart';
+import '../widgets/frosted_app_bar.dart';
 import 'friend_detail_page.dart';
 import 'group_detail_page.dart';
 import 'world_detail_page.dart';
@@ -83,7 +84,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+          // 顶部让出毛玻璃导航栏的高度。
+          padding: EdgeInsets.fromLTRB(
+            16,
+            frostedAppBarInset(context) + 4,
+            16,
+            10,
+          ),
           child: TextField(
             controller: _controller,
             // 不要关掉输入法的联想：vivo / iQOO 会把「无联想」的输入框
@@ -151,11 +158,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: active
-              ? AppTheme.accent.withValues(alpha: 0.16)
-              : Colors.white.withValues(alpha: 0.05),
+              ? context.appColors.accent.withValues(alpha: 0.16)
+              : context.appColors.ink(0.05),
           borderRadius: BorderRadius.circular(AppRadius.sheet),
           border: Border.all(
-            color: active ? AppTheme.accent.withValues(alpha: 0.5) : Colors.transparent,
+            color: active ? context.appColors.accent.withValues(alpha: 0.5) : Colors.transparent,
           ),
         ),
         child: Text(
@@ -163,7 +170,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           style: TextStyle(
             fontSize: AppText.caption,
             fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-            color: active ? AppTheme.accent : Colors.white.withValues(alpha: 0.5),
+            color: active ? context.appColors.accent : context.appColors.ink(0.5),
           ),
         ),
       ),
@@ -183,12 +190,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           return const _Hint(icon: Icons.person_off_outlined, text: '没有找到这个用户');
         }
         return ListView.separated(
-          padding: const EdgeInsets.only(bottom: 24),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.paddingOf(context).bottom + 24,
+          ),
           itemCount: users.length,
           separatorBuilder: (_, _) => Divider(
             height: 1,
             indent: 74,
-            color: Colors.white.withValues(alpha: 0.05),
+            color: context.appColors.ink(0.05),
           ),
           itemBuilder: (context, i) => _UserRow(user: users[i]),
         );
@@ -206,12 +215,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           return const _Hint(icon: Icons.public_off, text: '没有找到相关世界');
         }
         return ListView.separated(
-          padding: const EdgeInsets.only(bottom: 24),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.paddingOf(context).bottom + 24,
+          ),
           itemCount: worlds.length,
           separatorBuilder: (_, _) => Divider(
             height: 1,
             indent: 100,
-            color: Colors.white.withValues(alpha: 0.05),
+            color: context.appColors.ink(0.05),
           ),
           itemBuilder: (context, i) => _WorldRow(world: worlds[i]),
         );
@@ -229,12 +240,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           return const _Hint(icon: Icons.groups_outlined, text: '没有找到相关群组');
         }
         return ListView.separated(
-          padding: const EdgeInsets.only(bottom: 24),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.paddingOf(context).bottom + 24,
+          ),
           itemCount: groups.length,
           separatorBuilder: (_, _) => Divider(
             height: 1,
             indent: 74,
-            color: Colors.white.withValues(alpha: 0.05),
+            color: context.appColors.ink(0.05),
           ),
           itemBuilder: (context, i) => _GroupRow(group: groups[i]),
         );
@@ -296,12 +309,12 @@ class _UserRow extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
-                            color: AppTheme.accent.withValues(alpha: 0.15),
+                            color: context.appColors.accent.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             '好友',
-                            style: TextStyle(fontSize: AppText.label, color: AppTheme.accent),
+                            style: TextStyle(fontSize: AppText.label, color: context.appColors.accent),
                           ),
                         ),
                       ],
@@ -311,7 +324,7 @@ class _UserRow extends ConsumerWidget {
                           trust,
                           style: TextStyle(
                             fontSize: 10,
-                            color: Colors.white.withValues(alpha: 0.3),
+                            color: context.appColors.ink(0.3),
                           ),
                         ),
                       ],
@@ -325,7 +338,7 @@ class _UserRow extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: AppText.label,
-                        color: Colors.white.withValues(alpha: 0.35),
+                        color: context.appColors.ink(0.35),
                       ),
                     ),
                   ],
@@ -367,8 +380,8 @@ class _WorldRow extends ConsumerWidget {
                 errorWidget: (_, _, _) => Container(
                   width: 72,
                   height: 54,
-                  color: AppTheme.surfaceHigh,
-                  child: const Icon(Icons.public, size: 18, color: Colors.white24),
+                  color: context.appColors.surfaceHigh,
+                  child: Icon(Icons.public, size: 18, color: context.appColors.ink(0.24)),
                 ),
               ),
             ),
@@ -390,7 +403,7 @@ class _WorldRow extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: AppText.label,
-                      color: Colors.white.withValues(alpha: 0.35),
+                      color: context.appColors.ink(0.35),
                     ),
                   ),
                 ],
@@ -421,10 +434,10 @@ class _GroupRow extends ConsumerWidget {
       width: 46,
       height: 46,
       decoration: BoxDecoration(
-        color: AppTheme.surfaceHigh,
+        color: context.appColors.surfaceHigh,
         borderRadius: BorderRadius.circular(AppRadius.field),
       ),
-      child: const Icon(Icons.groups, size: 20, color: Colors.white24),
+      child: Icon(Icons.groups, size: 20, color: context.appColors.ink(0.24)),
     );
 
     return InkWell(
@@ -474,7 +487,7 @@ class _GroupRow extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: AppText.label,
-                        color: Colors.white.withValues(alpha: 0.35),
+                        color: context.appColors.ink(0.35),
                       ),
                     ),
                   ],
@@ -485,7 +498,7 @@ class _GroupRow extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: AppText.label,
-                      color: Colors.white.withValues(alpha: 0.35),
+                      color: context.appColors.ink(0.35),
                     ),
                   ),
                 ],
@@ -513,12 +526,12 @@ class _Circle extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppTheme.surfaceHigh,
+        color: context.appColors.surfaceHigh,
       ),
       alignment: Alignment.center,
       child: Text(
         name.isEmpty ? '?' : name.substring(0, 1).toUpperCase(),
-        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white54),
+        style: TextStyle(fontWeight: FontWeight.w600, color: context.appColors.ink(0.54)),
       ),
     );
 
@@ -566,7 +579,7 @@ class _RecentSearches extends StatelessWidget {
                   style: TextStyle(
                     fontSize: AppText.caption,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: context.appColors.ink(0.45),
                   ),
                 ),
                 const Spacer(),
@@ -575,7 +588,7 @@ class _RecentSearches extends StatelessWidget {
                   style: TextButton.styleFrom(
                     minimumSize: const Size(40, 28),
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    foregroundColor: Colors.white.withValues(alpha: 0.4),
+                    foregroundColor: context.appColors.ink(0.4),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   child: const Text(
@@ -599,7 +612,7 @@ class _RecentSearches extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.06),
+                        color: context.appColors.ink(0.06),
                         borderRadius: BorderRadius.circular(AppRadius.sheet),
                       ),
                       child: Row(
@@ -608,14 +621,14 @@ class _RecentSearches extends StatelessWidget {
                           Icon(
                             Icons.history,
                             size: 13,
-                            color: Colors.white.withValues(alpha: 0.3),
+                            color: context.appColors.ink(0.3),
                           ),
                           const SizedBox(width: 6),
                           Text(
                             q,
                             style: TextStyle(
                               fontSize: AppText.caption,
-                              color: Colors.white.withValues(alpha: 0.6),
+                              color: context.appColors.ink(0.6),
                             ),
                           ),
                         ],
@@ -645,7 +658,7 @@ class _Hint extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 40, color: Colors.white.withValues(alpha: 0.15)),
+            Icon(icon, size: 40, color: context.appColors.ink(0.15)),
             const SizedBox(height: 12),
             Text(
               text,
@@ -653,7 +666,7 @@ class _Hint extends StatelessWidget {
               style: TextStyle(
                 fontSize: AppText.caption,
                 height: 1.6,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: context.appColors.ink(0.4),
               ),
             ),
           ],

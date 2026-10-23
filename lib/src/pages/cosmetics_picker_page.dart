@@ -59,9 +59,9 @@ class _CosmeticsPickerPageState extends ConsumerState<CosmeticsPickerPage>
         title: const Text('个人资料装饰'),
         bottom: TabBar(
           controller: _tabs,
-          indicatorColor: AppTheme.accent,
-          labelColor: AppTheme.accent,
-          unselectedLabelColor: Colors.white54,
+          indicatorColor: context.appColors.accent,
+          labelColor: context.appColors.accent,
+          unselectedLabelColor: context.appColors.ink(0.54),
           labelStyle: const TextStyle(fontSize: AppText.secondary, fontWeight: FontWeight.w600),
           unselectedLabelStyle: const TextStyle(fontSize: AppText.secondary),
           tabs: [for (final k in _kinds) Tab(text: k.label)],
@@ -158,7 +158,7 @@ class _Grid extends StatelessWidget {
                 child: Icon(
                   Icons.block,
                   size: 28,
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: context.appColors.ink(0.2),
                 ),
               );
             }
@@ -172,7 +172,7 @@ class _Grid extends StatelessWidget {
                   ? Icon(
                       Icons.auto_awesome,
                       size: 26,
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: context.appColors.ink(0.2),
                     )
                   : CachedNetworkImage(
                       imageUrl: item.imageUrl,
@@ -181,7 +181,7 @@ class _Grid extends StatelessWidget {
                       errorWidget: (_, _, _) => Icon(
                         Icons.broken_image_outlined,
                         size: 24,
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: context.appColors.ink(0.2),
                       ),
                     ),
             );
@@ -214,11 +214,11 @@ class _Tile extends StatelessWidget {
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: selected
-              ? AppTheme.accent.withValues(alpha: 0.12)
-              : Colors.white.withValues(alpha: 0.04),
+              ? context.appColors.accent.withValues(alpha: 0.12)
+              : context.appColors.ink(0.04),
           borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(
-            color: selected ? AppTheme.accent : Colors.transparent,
+            color: selected ? context.appColors.accent : Colors.transparent,
             width: 1.5,
           ),
         ),
@@ -242,8 +242,8 @@ class _Tile extends StatelessWidget {
                 fontSize: AppText.label,
                 height: 1.3,
                 color: selected
-                    ? AppTheme.accent
-                    : Colors.white.withValues(alpha: 0.55),
+                    ? context.appColors.accent
+                    : context.appColors.ink(0.55),
               ),
             ),
           ],

@@ -36,8 +36,8 @@ class _SkeletonBoxState extends State<SkeletonBox>
 
   @override
   Widget build(BuildContext context) {
-    final base = Colors.white.withValues(alpha: 0.045);
-    final highlight = Colors.white.withValues(alpha: 0.10);
+    final base = context.appColors.ink(0.045);
+    final highlight = context.appColors.ink(0.10);
 
     return AnimatedBuilder(
       animation: _controller,

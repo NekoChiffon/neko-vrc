@@ -12,7 +12,7 @@ import '../theme.dart';
 Future<void> showStatusSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: AppTheme.surface,
+    backgroundColor: context.appColors.surface,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -103,7 +103,7 @@ class _StatusSheetState extends ConsumerState<_StatusSheet> {
           'VRChat 还没有记录过你的状态语',
           style: TextStyle(
             fontSize: AppText.label,
-            color: Colors.white.withValues(alpha: 0.3),
+            color: context.appColors.ink(0.3),
           ),
         ),
       );
@@ -113,7 +113,7 @@ class _StatusSheetState extends ConsumerState<_StatusSheet> {
       margin: const EdgeInsets.fromLTRB(20, 4, 20, 10),
       constraints: const BoxConstraints(maxHeight: 210),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: context.appColors.ink(0.04),
         borderRadius: BorderRadius.circular(AppRadius.field),
       ),
       child: ListView.separated(
@@ -124,7 +124,7 @@ class _StatusSheetState extends ConsumerState<_StatusSheet> {
           height: 1,
           indent: 14,
           endIndent: 14,
-          color: Colors.white.withValues(alpha: 0.05),
+          color: context.appColors.ink(0.05),
         ),
         itemBuilder: (context, i) {
           final text = history[i];
@@ -144,14 +144,14 @@ class _StatusSheetState extends ConsumerState<_StatusSheet> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: AppText.secondary,
-                        color: Colors.white.withValues(alpha: 0.75),
+                        color: context.appColors.ink(0.75),
                       ),
                     ),
                   ),
                   Icon(
                     Icons.north_west,
                     size: 13,
-                    color: Colors.white.withValues(alpha: 0.25),
+                    color: context.appColors.ink(0.25),
                   ),
                 ],
               ),
@@ -180,7 +180,7 @@ class _StatusSheetState extends ConsumerState<_StatusSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(top: 10, bottom: 14),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
+                  color: context.appColors.ink(0.15),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -208,14 +208,14 @@ class _StatusSheetState extends ConsumerState<_StatusSheet> {
                 onSubmitted: (_) => _saving ? null : _save(),
                 decoration: InputDecoration(
                   hintText: '状态语，比如「挂机充电」',
-                  counterStyle: const TextStyle(fontSize: 10, color: Colors.white24),
+                  counterStyle: TextStyle(fontSize: 10, color: context.appColors.ink(0.24)),
                   suffixIcon: IconButton(
                     icon: Icon(
                       Icons.history,
                       size: 19,
                       color: _showHistory
-                          ? AppTheme.accent
-                          : Colors.white.withValues(alpha: 0.4),
+                          ? context.appColors.accent
+                          : context.appColors.ink(0.4),
                     ),
                     // 历史是 VRChat 服务端记的（最近 10 条），每次展开都现拉。
                     onPressed: _toggleHistory,
@@ -286,12 +286,12 @@ class _OptionRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: AppText.body,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: Colors.white.withValues(alpha: selected ? 0.95 : 0.65),
+                  color: context.appColors.ink(selected ? 0.95 : 0.65),
                 ),
               ),
             ),
             if (selected)
-              const Icon(Icons.check, size: 17, color: AppTheme.accent),
+              Icon(Icons.check, size: 17, color: context.appColors.accent),
           ],
         ),
       ),

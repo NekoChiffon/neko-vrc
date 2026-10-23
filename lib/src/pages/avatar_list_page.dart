@@ -22,7 +22,7 @@ final avatarListProvider =
       offset: offset,
       releaseStatus: ReleaseStatus.all,
     );
-    final batch = resp.data ?? const <Avatar>[];
+    final batch = resp.data ?? <Avatar>[];
     out.addAll(batch);
     if (batch.length < 100) break;
     offset += 100;
@@ -56,7 +56,7 @@ class AvatarListPage extends ConsumerWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppText.caption,
-                color: Colors.white.withValues(alpha: 0.45),
+                color: context.appColors.ink(0.45),
               ),
             ),
           ),
@@ -68,7 +68,7 @@ class AvatarListPage extends ConsumerWidget {
                 '还没有上传过模型',
                 style: TextStyle(
                   fontSize: AppText.caption,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: context.appColors.ink(0.4),
                 ),
               ),
             );
@@ -132,8 +132,8 @@ class _AvatarCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(AppRadius.field),
           border: Border.all(
             color: isCurrent
-                ? AppTheme.accent
-                : Colors.white.withValues(alpha: 0.06),
+                ? context.appColors.accent
+                : context.appColors.ink(0.06),
             width: isCurrent ? 1.5 : 1,
           ),
         ),
@@ -146,13 +146,13 @@ class _AvatarCard extends ConsumerWidget {
                 imageUrl: imageUrl,
                 httpHeaders: ref.watch(imageHeadersProvider),
                 fit: BoxFit.cover,
-                errorWidget: (_, _, _) => const ColoredBox(
-                  color: AppTheme.surfaceHigh,
+                errorWidget: (_, _, _) => ColoredBox(
+                  color: context.appColors.surfaceHigh,
                   child: Center(
                     child: Icon(
                       Icons.image_outlined,
                       size: 26,
-                      color: Colors.white24,
+                      color: context.appColors.ink(0.24),
                     ),
                   ),
                 ),
@@ -187,7 +187,7 @@ class _AvatarCard extends ConsumerWidget {
                         Icon(
                           Icons.check_circle,
                           size: 14,
-                          color: AppTheme.accent,
+                          color: context.appColors.accent,
                         ),
                     ],
                   ),

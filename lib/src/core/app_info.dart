@@ -9,7 +9,7 @@ class AppInfo {
   const AppInfo._();
 
   static const String applicationName = 'NekoVRC';
-  static const String version = '0.39.3';
+  static const String version = '0.45.2';
 
   /// 联系方式：建议填邮箱或你的域名，方便 VRChat 团队在必要时联系你。
   static const String contactInfo = 'ChiffonNya@126.com';

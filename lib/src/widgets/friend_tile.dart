@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/friend_presence.dart';
 import '../providers/cosmetics_provider.dart';
-import 'animated_network_image.dart';
+import '../theme.dart';
 import '../providers/friends_provider.dart';
 
 /// 好友列表里的一行。
@@ -52,9 +52,10 @@ class FriendTile extends ConsumerWidget {
                       image: nameplateUrl == null
                           ? null
                           : DecorationImage(
-                              // 名字牌是 APNG，用原生解码器才能动。
-                              image: animatedImageProvider(
-                                url: nameplateUrl,
+                              // 列表里用静态首帧：每行都跑 APNG 太耗电，
+                              // 动图留给资料页。
+                              image: CachedNetworkImageProvider(
+                                nameplateUrl,
                                 headers: ref.watch(imageHeadersProvider),
                               ),
                               fit: BoxFit.cover,
@@ -91,7 +92,7 @@ class FriendTile extends ConsumerWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.62),
+                              color: context.appColors.ink(0.62),
                             ),
                           ),
                         ],
@@ -176,7 +177,7 @@ class _Avatar extends ConsumerWidget {
       alignment: Alignment.center,
       child: Text(
         friend.displayName.isEmpty ? '?' : friend.displayName.substring(0, 1).toUpperCase(),
-        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white70),
+        style: TextStyle(fontWeight: FontWeight.w600, color: context.appColors.ink(0.7)),
       ),
     );
 
@@ -214,11 +215,12 @@ class _Avatar extends ConsumerWidget {
               width: size * 1.3,
               height: size * 1.3,
               child: IgnorePointer(
-                child: AnimatedNetworkImage(
-                  url: frameUrl,
-                  fallbackUrl: frameAssets?.base,
-                  headers: ref.watch(imageHeadersProvider),
+                // 头像框同理，列表里只看静态首帧。
+                child: CachedNetworkImage(
+                  imageUrl: frameUrl,
+                  httpHeaders: ref.watch(imageHeadersProvider),
                   fit: BoxFit.fill,
+                  errorWidget: (_, _, _) => const SizedBox.shrink(),
                 ),
               ),
             ),
@@ -231,7 +233,7 @@ class _Avatar extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: friend.statusColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF0B0F14), width: 2),
+                border: Border.all(color: context.appColors.canvas, width: 2),
               ),
             ),
           ),

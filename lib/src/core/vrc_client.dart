@@ -3,10 +3,14 @@ import 'dart:ui' as ui;
 import 'package:http_parser/http_parser.dart';
 import 'dart:io' as io;
 
+import 'dart:ui' show Color;
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:vrchat_dart/vrchat_dart.dart';
+
+import 'profile_backgrounds.dart';
 
 import 'app_info.dart';
 
@@ -360,6 +364,8 @@ class VrcClient {
       );
       if (resp.statusCode == 200) return null;
       return '保存失败（HTTP ${resp.statusCode}）';
+    } on DioException catch (e) {
+      return '保存失败：${_dioMessage(e)}';
     } catch (e) {
       return '保存失败：$e';
     }
@@ -383,6 +389,8 @@ class VrcClient {
       );
       if (resp.statusCode == 200) return null;
       return '保存失败（HTTP ${resp.statusCode}）';
+    } on DioException catch (e) {
+      return '保存失败：${_dioMessage(e)}';
     } catch (e) {
       return '保存失败：$e';
     }
@@ -1055,6 +1063,330 @@ class VrcClient {
       throw Exception(firstError?.toString() ?? '取用户资料失败');
     }
     return UserDetail(base: profileBase, profile: profile);
+  }
+
+  /// 资料背景（`/profile/{id}` 的 background* 字段，SDK 还没生成模型）。
+  Future<ProfileBackground> fetchProfileBackground(String userId) async {
+    try {
+      final resp = await api.rawApi.dio.get<dynamic>('/profile/$userId');
+      final data = resp.data;
+      if (data is Map) {
+        return ProfileBackground.fromJson(Map<String, dynamic>.from(data));
+      }
+    } catch (_) {
+      // 拿不到就当默认背景，不影响资料页其它内容。
+    }
+    return const ProfileBackground();
+  }
+
+  /// 改资料背景。
+  ///
+  /// [type] 取 `default` / `gradient` / `texture` / `inventory`。
+  /// 渐变颜色是 6 位十六进制、不带 `#`。
+  Future<String?> updateProfileBackground({
+    required String userId,
+    required String type,
+    String gradientTop = '',
+    String gradientBottom = '',
+    String textureId = '',
+  }) async {
+    try {
+      // 只发需要的字段：空字符串会被接口当成非法值（400）。
+      final payload = <String, dynamic>{
+        'backgroundType': type,
+        if (textureId.isNotEmpty) 'backgroundTextureId': textureId,
+        if (gradientTop.isNotEmpty) 'backgroundGradientTop': gradientTop,
+        if (gradientBottom.isNotEmpty) 'backgroundGradientBottom': gradientBottom,
+      };
+      final resp = await api.rawApi.dio.put<dynamic>(
+        '/profile/$userId',
+        data: payload,
+      );
+      if (resp.statusCode == 200) return null;
+      return '保存失败（HTTP ${resp.statusCode}）';
+    } on DioException catch (e) {
+      return '保存失败：${_dioMessage(e)}';
+    } catch (e) {
+      return '保存失败：$e';
+    }
+  }
+
+  /// 库存（`/inventory`）。
+  Future<InventoryResult> fetchInventory({
+    int n = 60,
+    int offset = 0,
+    String? type,
+    bool? archived,
+    String order = 'newest',
+  }) async {
+    final resp = await api.rawApi.dio.get<dynamic>(
+      '/inventory',
+      queryParameters: {
+        'n': n,
+        'offset': offset,
+        'order': order,
+        'types': ?type,
+        'archived': ?archived,
+      },
+    );
+    final data = resp.data;
+    if (data is! Map) return const InventoryResult(items: [], totalCount: null);
+    final raw = data['data'];
+    final items = <InventoryItem>[];
+    if (raw is List) {
+      for (final e in raw) {
+        if (e is Map) {
+          items.add(InventoryItem.fromJson(Map<String, dynamic>.from(e)));
+        }
+      }
+    }
+    final total = data['totalCount'];
+    return InventoryResult(
+      items: items,
+      totalCount: total is num ? total.toInt() : null,
+    );
+  }
+
+  /// VRChat Credits 余额。
+  Future<int?> fetchCreditsBalance(String userId) async {
+    try {
+      final resp = await api.rawApi.dio.get<dynamic>(
+        '/user/$userId/economy/balance',
+      );
+      final data = resp.data;
+      if (data is Map && data['balance'] is num) {
+        return (data['balance'] as num).toInt();
+      }
+    } catch (_) {
+      // 余额拿不到就不显示
+    }
+    return null;
+  }
+
+  /// 屏蔽 / 禁言记录（`/auth/user/playermoderations`）。
+  Future<List<PlayerModerationRecord>> fetchPlayerModerations() async {
+    try {
+      final resp = await api.rawApi.dio.get<dynamic>(
+        '/auth/user/playermoderations',
+      );
+      final data = resp.data;
+      if (data is! List) return const [];
+      return data
+          .whereType<Map>()
+          .map(
+            (e) => PlayerModerationRecord.fromJson(
+              Map<String, dynamic>.from(e),
+            ),
+          )
+          .where((e) => e.id.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// 解除一条屏蔽 / 禁言（删除那条 moderation 记录）。
+  Future<String?> deletePlayerModeration(String id) async {
+    try {
+      final resp = await api.rawApi.dio.delete<dynamic>(
+        '/auth/user/playermoderations/$id',
+      );
+      if (resp.statusCode == 200 || resp.statusCode == 204) return null;
+      return '解除失败（HTTP ${resp.statusCode}）';
+    } on DioException catch (e) {
+      return '解除失败：${_dioMessage(e)}';
+    } catch (e) {
+      return '解除失败：$e';
+    }
+  }
+
+  /// 从 VRChat 的错误响应里挖出真正的原因，别把整段 DioException 丢给用户。
+  String _dioMessage(DioException e) {
+    final data = e.response?.data;
+    if (data is Map) {
+      final error = data['error'];
+      if (error is Map && error['message'] != null) {
+        return error['message'].toString();
+      }
+      if (data['message'] != null) return data['message'].toString();
+    }
+    final status = e.response?.statusCode;
+    if (data is String && data.trim().isNotEmpty) return data.trim();
+    return status == null ? (e.message ?? '网络异常') : 'HTTP $status';
+  }
+}
+
+/// 一页库存。
+class InventoryResult {
+  const InventoryResult({required this.items, required this.totalCount});
+
+  final List<InventoryItem> items;
+  final int? totalCount;
+}
+
+/// 库存里的一件物品（表情、贴纸、道具、皮肤……）。
+class InventoryItem {
+  const InventoryItem({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.imageUrl,
+    required this.itemType,
+    required this.itemTypeLabel,
+    required this.isArchived,
+    required this.expiryDate,
+  });
+
+  final String id;
+  final String name;
+  final String description;
+  final String? imageUrl;
+  final String itemType;
+  final String itemTypeLabel;
+  final bool isArchived;
+  final String? expiryDate;
+
+  static InventoryItem fromJson(Map<String, dynamic> json) {
+    final metadata = json['metadata'];
+    final metaImage = metadata is Map ? metadata['imageUrl']?.toString() : null;
+    final image = json['imageUrl']?.toString();
+    final expiry = json['expiryDate']?.toString();
+
+    return InventoryItem(
+      id: json['id']?.toString() ?? '',
+      name: (json['name']?.toString() ?? '').trim(),
+      description: (json['description']?.toString() ?? '').trim(),
+      imageUrl: (image != null && image.isNotEmpty) ? image : metaImage,
+      itemType: json['itemType']?.toString() ?? '',
+      itemTypeLabel: json['itemTypeLabel']?.toString() ?? '',
+      isArchived: json['isArchived'] == true,
+      expiryDate: (expiry == null || expiry.isEmpty) ? null : expiry,
+    );
+  }
+
+  String get typeLabel {
+    if (itemTypeLabel.isNotEmpty) return itemTypeLabel;
+    return switch (itemType) {
+      'bundle' => '礼包',
+      'droneskin' => '无人机皮肤',
+      'emoji' => '表情',
+      'portalskin' => '传送门皮肤',
+      'prop' => '道具',
+      'sticker' => '贴纸',
+      'warpeffect' => '传送特效',
+      _ => itemType,
+    };
+  }
+}
+
+/// 一条屏蔽 / 禁言记录。
+///
+/// 名字和 SDK 里的 `PlayerModeration` 区分开，避免 import 冲突。
+class PlayerModerationRecord {
+  const PlayerModerationRecord({
+    required this.id,
+    required this.type,
+    required this.sourceDisplayName,
+    required this.targetDisplayName,
+    required this.created,
+  });
+
+  final String id;
+
+  /// block / mute / muteChat / unmute / unmuteChat / hideAvatar …
+  final String type;
+  final String sourceDisplayName;
+  final String targetDisplayName;
+  final DateTime? created;
+
+  bool get isBlock => type == 'block';
+
+  String get label => switch (type) {
+    'block' => '屏蔽',
+    'unblock' => '解除屏蔽',
+    'mute' => '禁言',
+    'unmute' => '解除禁言',
+    'muteChat' => '禁言',
+    'unmuteChat' => '解除禁言',
+    'hideAvatar' => '隐藏模型',
+    'showAvatar' => '显示模型',
+    'interactOff' => '关闭交互',
+    'interactOn' => '开启交互',
+    _ => type,
+  };
+
+  static PlayerModerationRecord fromJson(Map<String, dynamic> json) {
+    return PlayerModerationRecord(
+      id: json['id']?.toString() ?? '',
+      type: json['type']?.toString() ?? '',
+      sourceDisplayName: json['sourceDisplayName']?.toString() ?? '',
+      targetDisplayName: json['targetDisplayName']?.toString() ?? '',
+      created: DateTime.tryParse(json['created']?.toString() ?? ''),
+    );
+  }
+}
+
+/// 资料页背景。
+///
+/// VRChat 2026 年给资料页加了背景装饰：渐变（两个色值）、自定义贴图，
+/// 或者 VRC+ 的预设模板。预设的模板 ID 是对外不公开的，App 里只能原样展示
+/// 渐变和贴图，遇到预设就退回页面底色。
+class ProfileBackground {
+  const ProfileBackground({
+    this.type = 'default',
+    this.templateId = '',
+    this.textureId = '',
+    this.gradientTop = '',
+    this.gradientBottom = '',
+  });
+
+  final String type;
+  final String templateId;
+  final String textureId;
+  final String gradientTop;
+  final String gradientBottom;
+
+  bool get isGradient =>
+      type == 'gradient' && topColor != null && bottomColor != null;
+
+  bool get isTexture => type == 'texture' && textureUrl != null;
+
+  /// 预设模板背景（VRC+ 那些）。
+  bool get isPreset => type != 'default' && !isGradient && !isTexture;
+
+  /// 当前背景对应的预设（`backgroundTextureId` 就是预设 ID）。
+  ProfileBackgroundPreset? get preset => profileBackgroundPreset(textureId);
+
+  Color? get topColor => _parseHex(gradientTop);
+  Color? get bottomColor => _parseHex(gradientBottom);
+
+  /// 预设背景直接拿官方素材；自传贴图才走文件接口。
+  String? get textureUrl {
+    if (type != 'texture' || textureId.isEmpty) return null;
+    final found = profileBackgroundPreset(textureId);
+    if (found != null) return found.imageUrl;
+    if (textureId.startsWith('file_')) {
+      return 'https://api.vrchat.cloud/api/1/file/$textureId/1/file';
+    }
+    return null;
+  }
+
+  static Color? _parseHex(String value) {
+    final hex = value.replaceAll('#', '').trim();
+    if (hex.length != 6) return null;
+    final v = int.tryParse(hex, radix: 16);
+    if (v == null) return null;
+    return Color(0xFF000000 | v);
+  }
+
+  static ProfileBackground fromJson(Map<String, dynamic> json) {
+    return ProfileBackground(
+      type: json['backgroundType']?.toString() ?? 'default',
+      templateId: json['backgroundTemplateId']?.toString() ?? '',
+      textureId: json['backgroundTextureId']?.toString() ?? '',
+      gradientTop: json['backgroundGradientTop']?.toString() ?? '',
+      gradientBottom: json['backgroundGradientBottom']?.toString() ?? '',
+    );
   }
 }
 

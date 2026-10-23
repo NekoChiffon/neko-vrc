@@ -132,7 +132,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     style: TextStyle(
                       fontSize: AppText.label,
                       height: 1.7,
-                      color: Colors.white.withValues(alpha: 0.28),
+                      color: context.appColors.ink(0.28),
                     ),
                   ),
                 ],
@@ -244,16 +244,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           '使用上次登录的账号',
           style: TextStyle(
             fontSize: AppText.secondary,
-            color: Colors.white.withValues(alpha: 0.4),
+            color: context.appColors.ink(0.4),
           ),
         ),
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: AppTheme.surface,
+            color: context.appColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.field),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            border: Border.all(color: context.appColors.ink(0.06)),
           ),
           child: Row(
             children: [
@@ -262,12 +262,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   width: 46,
                   height: 46,
                   child: saved.avatarUrl.isEmpty
-                      ? const ColoredBox(color: AppTheme.surfaceHigh)
+                      ? ColoredBox(color: context.appColors.surfaceHigh)
                       : CachedNetworkImage(
                           imageUrl: saved.avatarUrl,
                           fit: BoxFit.cover,
                           errorWidget: (_, _, _) =>
-                              const ColoredBox(color: AppTheme.surfaceHigh),
+                              ColoredBox(color: context.appColors.surfaceHigh),
                         ),
                 ),
               ),
@@ -292,7 +292,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: AppText.caption,
-                        color: Colors.white.withValues(alpha: 0.35),
+                        color: context.appColors.ink(0.35),
                       ),
                     ),
                   ],
@@ -312,7 +312,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         TextButton(
           onPressed: _busy ? null : _switchAccount,
           style: TextButton.styleFrom(
-            foregroundColor: Colors.white.withValues(alpha: 0.45),
+            foregroundColor: context.appColors.ink(0.45),
             minimumSize: const Size(0, 38),
           ),
           child: const Text(
@@ -337,7 +337,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 2),
                 minimumSize: const Size(0, 34),
-                foregroundColor: AppTheme.accent,
+                foregroundColor: context.appColors.accent,
               ),
               child: const Text(
                 '重新登录（只需输密码）',
@@ -371,7 +371,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           '使用 VRChat 账号或邮箱',
           style: TextStyle(
             fontSize: AppText.secondary,
-            color: Colors.white.withValues(alpha: 0.4),
+            color: context.appColors.ink(0.4),
           ),
         ),
         const SizedBox(height: 22),
@@ -398,7 +398,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             hintText: '密码',
             suffixIcon: IconButton(
               iconSize: 20,
-              color: Colors.white.withValues(alpha: 0.4),
+              color: context.appColors.ink(0.4),
               icon: Icon(
                 _obscure
                     ? Icons.visibility_off_outlined
@@ -428,10 +428,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     onChanged: (v) =>
                         setState(() => _rememberPassword = v ?? false),
                     visualDensity: VisualDensity.compact,
-                    activeColor: AppTheme.accent,
-                    checkColor: const Color(0xFF08131A),
+                    activeColor: context.appColors.accent,
+                    checkColor: Theme.of(context).colorScheme.onPrimary,
                     side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.25),
+                      color: context.appColors.ink(0.25),
                     ),
                   ),
                 ),
@@ -440,7 +440,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   '记住密码',
                   style: TextStyle(
                     fontSize: AppText.caption,
-                    color: Colors.white.withValues(alpha: 0.55),
+                    color: context.appColors.ink(0.55),
                   ),
                 ),
               ],
@@ -456,7 +456,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               style: TextStyle(
                 fontSize: AppText.label,
                 height: 1.6,
-                color: Colors.white.withValues(alpha: 0.28),
+                color: context.appColors.ink(0.28),
               ),
             ),
           ),
@@ -487,7 +487,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           style: TextStyle(
             fontSize: AppText.secondary,
             height: 1.6,
-            color: Colors.white.withValues(alpha: 0.4),
+            color: context.appColors.ink(0.4),
           ),
         ),
         if (emailOtp) ...[
@@ -496,7 +496,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             '验证码已发送到你的邮箱',
             style: TextStyle(
               fontSize: AppText.caption,
-              color: AppTheme.accent.withValues(alpha: 0.8),
+              color: context.appColors.accent.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -535,7 +535,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   });
                 },
           style: TextButton.styleFrom(
-            foregroundColor: Colors.white.withValues(alpha: 0.45),
+            foregroundColor: context.appColors.ink(0.45),
             minimumSize: const Size(0, 38),
           ),
           child: const Text('返回', style: TextStyle(fontSize: AppText.caption)),
@@ -547,7 +547,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             style: TextStyle(
               fontSize: AppText.label,
               height: 1.6,
-              color: Colors.white.withValues(alpha: 0.28),
+              color: context.appColors.ink(0.28),
             ),
           ),
         ],
@@ -568,10 +568,10 @@ class _Brand extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: AppTheme.accent.withValues(alpha: 0.12),
+            color: context.appColors.accent.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Icon(Icons.pets, size: 21, color: AppTheme.accent),
+          child: Icon(Icons.pets, size: 21, color: context.appColors.accent),
         ),
         const SizedBox(width: 12),
         Column(
@@ -587,7 +587,7 @@ class _Brand extends StatelessWidget {
               'VRChat 第三方客户端',
               style: TextStyle(
                 fontSize: AppText.label,
-                color: Colors.white.withValues(alpha: 0.32),
+                color: context.appColors.ink(0.32),
               ),
             ),
           ],
@@ -610,7 +610,7 @@ class _FieldLabel extends StatelessWidget {
       style: TextStyle(
         fontSize: AppText.caption,
         fontWeight: FontWeight.w500,
-        color: Colors.white.withValues(alpha: 0.45),
+        color: context.appColors.ink(0.45),
       ),
     );
   }
@@ -669,10 +669,10 @@ class _PrimaryButton extends StatelessWidget {
     return FilledButton(
       onPressed: busy ? null : onTap,
       style: FilledButton.styleFrom(
-        backgroundColor: AppTheme.accent,
-        foregroundColor: const Color(0xFF08131A),
-        disabledBackgroundColor: AppTheme.accent.withValues(alpha: 0.35),
-        disabledForegroundColor: const Color(0xFF08131A),
+        backgroundColor: context.appColors.accent,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        disabledBackgroundColor: context.appColors.accent.withValues(alpha: 0.35),
+        disabledForegroundColor: Theme.of(context).colorScheme.onPrimary,
         elevation: 0,
         minimumSize: const Size.fromHeight(48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

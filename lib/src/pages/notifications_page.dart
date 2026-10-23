@@ -63,7 +63,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
             child: Text(
               e.toString().replaceFirst('Exception: ', ''),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: AppText.caption, color: Colors.white.withValues(alpha: 0.45)),
+              style: TextStyle(fontSize: AppText.caption, color: context.appColors.ink(0.45)),
             ),
           ),
         ),
@@ -91,7 +91,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                               separatorBuilder: (_, _) => Divider(
                                 height: 1,
                                 indent: 62,
-                                color: Colors.white.withValues(alpha: 0.05),
+                                color: context.appColors.ink(0.05),
                               ),
                               itemBuilder: (context, i) =>
                                   _NotificationRow(item: visible[i]),
@@ -131,12 +131,12 @@ class _FilterBar extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: active
-                    ? AppTheme.accent.withValues(alpha: 0.16)
-                    : Colors.white.withValues(alpha: 0.05),
+                    ? context.appColors.accent.withValues(alpha: 0.16)
+                    : context.appColors.ink(0.05),
                 borderRadius: BorderRadius.circular(AppRadius.sheet),
                 border: Border.all(
                   color: active
-                      ? AppTheme.accent.withValues(alpha: 0.5)
+                      ? context.appColors.accent.withValues(alpha: 0.5)
                       : Colors.transparent,
                 ),
               ),
@@ -146,8 +146,8 @@ class _FilterBar extends StatelessWidget {
                   fontSize: AppText.caption,
                   fontWeight: active ? FontWeight.w600 : FontWeight.w400,
                   color: active
-                      ? AppTheme.accent
-                      : Colors.white.withValues(alpha: 0.5),
+                      ? context.appColors.accent
+                      : context.appColors.ink(0.5),
                 ),
               ),
             ),
@@ -170,14 +170,14 @@ class _EmptyNotifications extends StatelessWidget {
           Icon(
             Icons.notifications_none,
             size: 40,
-            color: Colors.white.withValues(alpha: 0.15),
+            color: context.appColors.ink(0.15),
           ),
           const SizedBox(height: 12),
           Text(
             '暂时没有通知',
             style: TextStyle(
               fontSize: AppText.caption,
-              color: Colors.white.withValues(alpha: 0.4),
+              color: context.appColors.ink(0.4),
             ),
           ),
           // 临时诊断：接口返回条数 / 解析失败数（release 包里看不到日志）
@@ -194,7 +194,7 @@ class _EmptyNotifications extends StatelessWidget {
                 style: TextStyle(
                   fontSize: AppText.label,
                   height: 1.5,
-                  color: Colors.white.withValues(alpha: 0.25),
+                  color: context.appColors.ink(0.25),
                 ),
               ),
             ),
@@ -217,14 +217,14 @@ class _EmptyCategory extends StatelessWidget {
           Icon(
             Icons.filter_alt_off_outlined,
             size: 36,
-            color: Colors.white.withValues(alpha: 0.15),
+            color: context.appColors.ink(0.15),
           ),
           const SizedBox(height: 10),
           Text(
             '这个分类还没有通知',
             style: TextStyle(
               fontSize: AppText.caption,
-              color: Colors.white.withValues(alpha: 0.4),
+              color: context.appColors.ink(0.4),
             ),
           ),
         ],
@@ -333,7 +333,7 @@ class _NotificationRowState extends ConsumerState<_NotificationRow> {
   Future<void> _rejectWithReply() async {
     final slot = await showModalBottomSheet<int>(
       context: context,
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.appColors.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -364,7 +364,7 @@ class _NotificationRowState extends ConsumerState<_NotificationRow> {
                     '选一句发给对方，之后这条邀请会被标记为已回复',
                     style: TextStyle(
                       fontSize: AppText.label,
-                      color: Colors.white.withValues(alpha: 0.35),
+                      color: context.appColors.ink(0.35),
                     ),
                   ),
                 ),
@@ -451,8 +451,8 @@ class _NotificationRowState extends ConsumerState<_NotificationRow> {
                         width: 6,
                         height: 6,
                         margin: const EdgeInsets.only(right: 6),
-                        decoration: const BoxDecoration(
-                          color: AppTheme.accent,
+                        decoration: BoxDecoration(
+                          color: context.appColors.accent,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -464,7 +464,7 @@ class _NotificationRowState extends ConsumerState<_NotificationRow> {
                         style: TextStyle(
                           fontSize: AppText.secondary,
                           fontWeight: unread ? FontWeight.w600 : FontWeight.w500,
-                          color: Colors.white.withValues(alpha: unread ? 0.95 : 0.7),
+                          color: context.appColors.ink(unread ? 0.95 : 0.7),
                         ),
                       ),
                     ),
@@ -473,7 +473,7 @@ class _NotificationRowState extends ConsumerState<_NotificationRow> {
                       _relative(item.createdAt),
                       style: TextStyle(
                         fontSize: AppText.label,
-                        color: Colors.white.withValues(alpha: 0.3),
+                        color: context.appColors.ink(0.3),
                       ),
                     ),
                   ],
@@ -487,7 +487,7 @@ class _NotificationRowState extends ConsumerState<_NotificationRow> {
                     style: TextStyle(
                       fontSize: AppText.caption,
                       height: 1.5,
-                      color: Colors.white.withValues(alpha: 0.5),
+                      color: context.appColors.ink(0.5),
                     ),
                   ),
                 ],
@@ -514,7 +514,7 @@ class _NotificationRowState extends ConsumerState<_NotificationRow> {
                             '来自 ${item.senderUsername}',
                             style: TextStyle(
                               fontSize: AppText.label,
-                              color: Colors.white.withValues(alpha: 0.3),
+                              color: context.appColors.ink(0.3),
                             ),
                           ),
                         ),
@@ -561,9 +561,9 @@ class _NotificationRowState extends ConsumerState<_NotificationRow> {
                           minimumSize: const Size(0, 34),
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           textStyle: const TextStyle(fontSize: AppText.caption),
-                          foregroundColor: Colors.white60,
+                          foregroundColor: context.appColors.ink(0.6),
                           side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.15),
+                            color: context.appColors.ink(0.15),
                           ),
                         ),
                         child: const Text('拒绝'),
@@ -574,9 +574,9 @@ class _NotificationRowState extends ConsumerState<_NotificationRow> {
                           minimumSize: const Size(0, 34),
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           textStyle: const TextStyle(fontSize: AppText.caption),
-                          foregroundColor: Colors.white60,
+                          foregroundColor: context.appColors.ink(0.6),
                           side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.15),
+                            color: context.appColors.ink(0.15),
                           ),
                         ),
                         child: const Text('拒绝并回复'),
@@ -617,9 +617,9 @@ class _NotificationRowState extends ConsumerState<_NotificationRow> {
                           minimumSize: const Size(0, 34),
                           padding: const EdgeInsets.symmetric(horizontal: 18),
                           textStyle: const TextStyle(fontSize: AppText.caption),
-                          foregroundColor: Colors.white60,
+                          foregroundColor: context.appColors.ink(0.6),
                           side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.15),
+                            color: context.appColors.ink(0.15),
                           ),
                         ),
                         child: const Text('忽略'),
@@ -672,13 +672,13 @@ class _NotificationLeading extends ConsumerWidget {
       width: 38,
       height: 38,
       decoration: BoxDecoration(
-        color: AppTheme.surfaceHigh,
+        color: context.appColors.surfaceHigh,
         borderRadius: BorderRadius.circular(11),
       ),
       child: Icon(
         icon,
         size: 18,
-        color: unread ? AppTheme.accent : Colors.white.withValues(alpha: 0.35),
+        color: unread ? context.appColors.accent : context.appColors.ink(0.35),
       ),
     );
 
@@ -697,8 +697,8 @@ class _NotificationLeading extends ConsumerWidget {
         borderRadius: BorderRadius.circular(11),
         border: Border.all(
           color: unread
-              ? AppTheme.accent.withValues(alpha: 0.5)
-              : Colors.white.withValues(alpha: 0.08),
+              ? context.appColors.accent.withValues(alpha: 0.5)
+              : context.appColors.ink(0.08),
         ),
       ),
       child: ClipRRect(
@@ -792,9 +792,9 @@ class _InviteCard extends ConsumerWidget {
       child: Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: context.appColors.ink(0.04),
         borderRadius: BorderRadius.circular(AppRadius.field),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: context.appColors.ink(0.06)),
       ),
       child: Row(
         children: [
@@ -804,13 +804,13 @@ class _InviteCard extends ConsumerWidget {
               width: 64,
               height: 44,
               child: thumb.isEmpty
-                  ? const ColoredBox(color: AppTheme.surfaceHigh)
+                  ? ColoredBox(color: context.appColors.surfaceHigh)
                   : CachedNetworkImage(
                       imageUrl: thumb,
                       httpHeaders: ref.watch(imageHeadersProvider),
                       fit: BoxFit.cover,
                       errorWidget: (_, _, _) =>
-                          const ColoredBox(color: AppTheme.surfaceHigh),
+                          ColoredBox(color: context.appColors.surfaceHigh),
                     ),
             ),
           ),
@@ -836,7 +836,7 @@ class _InviteCard extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: AppText.label,
                     height: 1.4,
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: context.appColors.ink(0.4),
                   ),
                 ),
               ],
@@ -846,7 +846,7 @@ class _InviteCard extends ConsumerWidget {
             Icon(
               Icons.chevron_right,
               size: 16,
-              color: Colors.white.withValues(alpha: 0.25),
+              color: context.appColors.ink(0.25),
             ),
         ],
       ),

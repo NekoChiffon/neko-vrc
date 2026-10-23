@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vrchat_dart/vrchat_dart.dart';
@@ -448,6 +450,7 @@ class FriendsController extends Notifier<FriendsState> {
         lastSyncedAt: DateTime.now(),
       );
       _attachPipeline();
+      unawaited(_checkFriendRequests());
     } catch (e) {
       if (silent) {
         debugPrint('后台刷新好友失败（忽略）: $e');
@@ -465,6 +468,7 @@ class FriendsController extends Notifier<FriendsState> {
     if (previous.isEmpty) return;
 
     final at = DateTime.now();
+    final transitions = <({FriendPresence friend, bool online})>[];
     for (final current in _byId.values) {
       final old = previous[current.userId];
       if (old == null) continue;
@@ -472,9 +476,7 @@ class FriendsController extends Notifier<FriendsState> {
       if (old.isOnline != current.isOnline) {
         // Web 端上下线不记动态 —— 只有真的进/出游戏才提醒。
         if (current.isWebPlatform || old.isWebPlatform) continue;
-        if (current.isOnline) {
-          FriendNotifier.instance.notifyOnline(current.displayName);
-        }
+        transitions.add((friend: current, online: current.isOnline));
         _tracker.record(
           PresenceEvent(
             at: at,
@@ -515,6 +517,80 @@ class FriendsController extends Notifier<FriendsState> {
           ),
         );
       }
+    }
+
+    unawaited(_dispatchPresence(transitions));
+  }
+
+  /// 把上下线变化发成系统通知，顺便过滤掉不在提醒范围里的好友。
+  Future<void> _dispatchPresence(
+    List<({FriendPresence friend, bool online})> transitions,
+  ) async {
+    if (transitions.isEmpty) return;
+    final settings = FriendNotifier.instance.settings.value;
+    if (!settings.anyFriend) return;
+
+    Map<String, Set<String>>? membership;
+    if (settings.scope == NotifyScope.groups) {
+      membership = await _favoriteGroupMembership();
+    }
+
+    for (final t in transitions) {
+      final groups = membership?[t.friend.userId] ?? const <String>{};
+      if (!FriendNotifier.instance.allows(t.friend.userId, groups)) continue;
+      if (t.online) {
+        await FriendNotifier.instance.notifyOnline(t.friend.displayName);
+      } else {
+        await FriendNotifier.instance.notifyOffline(t.friend.displayName);
+      }
+    }
+  }
+
+  /// 好友收藏夹成员表：用户 ID → 所属收藏夹内部名。
+  ///
+  /// 只在「提醒范围 = 收藏分组」时才会拉，且拉一次就一直缓存着。
+  Map<String, Set<String>>? _favoriteMembershipCache;
+
+  Future<Map<String, Set<String>>> _favoriteGroupMembership() async {
+    final cached = _favoriteMembershipCache;
+    if (cached != null) return cached;
+    final map = <String, Set<String>>{};
+    try {
+      final favorites = await ref.read(friendFavoritesProvider.future);
+      for (final f in favorites) {
+        if (f.tags.isEmpty) continue;
+        for (final id in [f.id, f.favoriteId]) {
+          if (id.isEmpty) continue;
+          map.putIfAbsent(id, () => <String>{}).addAll(f.tags);
+        }
+      }
+    } catch (e) {
+      debugPrint('读取好友收藏夹失败（提醒范围暂时落空）: $e');
+    }
+    _favoriteMembershipCache = map;
+    return map;
+  }
+
+  DateTime? _lastFriendRequestCheck;
+
+  /// 检查通知列表里有没有新的好友申请。
+  ///
+  /// 每 60 秒刷新好友时都顺带拉通知太费电，这里自己节流到 4 分钟一次；
+  /// 实时通道收到通知事件时会单独触发，不受这个限制。
+  Future<void> _checkFriendRequests() async {
+    if (!FriendNotifier.instance.settings.value.friendRequest) return;
+    final now = DateTime.now();
+    final last = _lastFriendRequestCheck;
+    if (last != null && now.difference(last).inMinutes < 4) return;
+    _lastFriendRequestCheck = now;
+    try {
+      final list = await ref.read(notificationsProvider.future);
+      final requests = list
+          .where((n) => n.isFriendRequest)
+          .map((n) => (id: n.id, sender: n.senderUsername));
+      await FriendNotifier.instance.handleFriendRequests(requests);
+    } catch (e) {
+      debugPrint('检查好友申请失败（忽略）: $e');
     }
   }
 
@@ -674,7 +750,7 @@ class FriendsController extends Notifier<FriendsState> {
         final since = _tracker.sinceFor(updated.userId, updated.groupKey);
         _byId[event.userId] = updated.copyWith(locationSince: since);
         if (!updated.isWebPlatform) {
-          FriendNotifier.instance.notifyOnline(updated.displayName);
+          unawaited(_dispatchPresence([(friend: updated, online: true)]));
           _tracker.record(
             PresenceEvent(
               at: DateTime.now(),
@@ -702,6 +778,7 @@ class FriendsController extends Notifier<FriendsState> {
         event is WebsocketNotificationV2Delete) {
       // 通知类事件（好友申请、邀请、请求加入……）
       _scheduleNotificationRefresh();
+      unawaited(_checkFriendRequests());
     } else if (event is WebsocketFriendOffline) {
       final old = _byId[event.userId];
       if (old != null) {
@@ -712,6 +789,7 @@ class FriendsController extends Notifier<FriendsState> {
         );
         // Web 端下线（只是关掉网页）不记动态。
         if (!old.isWebPlatform) {
+          unawaited(_dispatchPresence([(friend: old, online: false)]));
           _tracker.record(
             PresenceEvent(
               at: DateTime.now(),
@@ -860,6 +938,12 @@ final friendNotesProvider = FutureProvider<Map<String, String>>((ref) async {
 /// 用户详情（`/users/{id}` + `/profile/{id}` 合起来）。
 final userDetailProvider = FutureProvider.family<UserDetail, String>((ref, userId) {
   return ref.read(vrcClientProvider).fetchUserDetail(userId);
+});
+
+/// 资料页背景（渐变 / 自定义贴图 / VRC+ 预设）。
+final profileBackgroundProvider =
+    FutureProvider.family<ProfileBackground, String>((ref, userId) {
+  return ref.read(vrcClientProvider).fetchProfileBackground(userId);
 });
 
 /// 好友动态列表。tracker 里的数据不会自己发通知，

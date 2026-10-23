@@ -31,6 +31,7 @@ class ProfileView extends ConsumerWidget {
     this.presence,
     this.showBackButton = true,
     this.selfMode = false,
+    this.topInset = 0,
     this.footer = const [],
     this.onOpenSettings,
     this.onOpenMenu,
@@ -45,6 +46,9 @@ class ProfileView extends ConsumerWidget {
 
   /// 自己的资料页：按钮变成「改状态」，且不显示邀请相关的东西。
   final bool selfMode;
+
+  /// 顶部额外留白。放在主界面里时传毛玻璃顶栏的高度，横幅才不会钻到顶栏下面。
+  final double topInset;
 
   /// 追加在最后的自定义区块。
   final List<Widget> footer;
@@ -95,7 +99,7 @@ class ProfileView extends ConsumerWidget {
         ? p!.statusDescription.trim()
         : (detail?.statusDescription ?? '').trim();
     final bubbleText = desc.isNotEmpty ? desc : (status == null ? '' : userStatusLabel(status));
-    final bubbleColor = status == null ? Colors.white54 : userStatusColor(status);
+    final bubbleColor = status == null ? context.appColors.ink(0.54) : userStatusColor(status);
 
     final trustTags = detail?.trustTags ?? p?.tags ?? const <String>[];
     final trust = FriendPresence.trustRankFromTags(trustTags);
@@ -106,14 +110,19 @@ class ProfileView extends ConsumerWidget {
     const bannerHeight = 180.0;
     // 头像一半压在横幅上、一半露在下面。
     const overlap = avatarSize / 2;
-    final topInset = MediaQuery.of(context).padding.top;
+    // 悬浮按钮避让状态栏，和可选的 [topInset] 留白是两回事。
+    final statusBarInset = MediaQuery.of(context).padding.top;
 
     return Stack(
       children: [
+        // VRChat 资料页背景（渐变 / 自定义贴图）。贴在内容下面铺满整页。
+        Positioned.fill(child: _ProfileBackdrop(userId: userId)),
         CustomScrollView(
           // 内容不满屏时也能下拉刷新
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
+            if (topInset > 0)
+              SliverToBoxAdapter(child: SizedBox(height: topInset)),
             SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -235,7 +244,7 @@ class ProfileView extends ConsumerWidget {
                                       '查看更多',
                                       style: TextStyle(
                                         fontSize: AppText.label,
-                                        color: Colors.white.withValues(alpha: 0.4),
+                                        color: context.appColors.ink(0.4),
                                       ),
                                     ),
                                   )
@@ -296,7 +305,7 @@ class ProfileView extends ConsumerWidget {
         // 按钮固定在顶部，不随内容滚走。
         if (showBackButton)
           Positioned(
-            top: topInset + 8,
+            top: statusBarInset + 8,
             left: 10,
             child: _CircleButton(
               icon: Icons.arrow_back,
@@ -306,12 +315,12 @@ class ProfileView extends ConsumerWidget {
         if (!selfMode) ...[
           if (onOpenMenu != null)
             Positioned(
-              top: topInset + 8,
+              top: statusBarInset + 8,
               right: 54,
               child: _CircleButton(icon: Icons.more_horiz, onTap: onOpenMenu!),
             ),
           Positioned(
-            top: topInset + 8,
+            top: statusBarInset + 8,
             right: 10,
             child: _CircleButton(
               icon: Icons.ios_share,
@@ -374,17 +383,6 @@ class _Banner extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorWidget: (_, _, _) => const SizedBox.shrink(),
               ),
-            // 底部压暗，保证头像和状态气泡看得清。
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0x22000000), Color(0xCC0B0F14)],
-                  stops: [0.3, 1.0],
-                ),
-              ),
-            ),
             // 特效叠在最上层：它是带透明通道的边框图。放底层会被横幅盖住，
             // 靠降横幅透明度去补救只会让横幅发灰，边框依旧看不清。
             // 用 fill 而不是 cover：手机横幅比网页宽，cover 会把特效上下裁掉。
@@ -456,17 +454,17 @@ class _Avatar extends ConsumerWidget {
 
     final inner = Container(
       padding: const EdgeInsets.all(2.5),
-      decoration: const BoxDecoration(shape: BoxShape.circle, color: AppTheme.canvas),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: context.appColors.canvas),
       child: ClipOval(
         child: SizedBox.expand(
           child: url == null || url!.isEmpty
-              ? _fallback(name)
+              ? _fallback(context, name)
               : CachedNetworkImage(
                   imageUrl: url!,
                   httpHeaders: headers,
                   fit: BoxFit.cover,
-                  placeholder: (_, _) => _fallback(name),
-                  errorWidget: (_, _, _) => _fallback(name),
+                  placeholder: (_, _) => _fallback(context, name),
+                  errorWidget: (_, _, _) => _fallback(context, name),
                 ),
         ),
       ),
@@ -479,7 +477,7 @@ class _Avatar extends ConsumerWidget {
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: 0.10),
+        color: context.appColors.ink(0.10),
       ),
       child: inner,
     );
@@ -514,10 +512,12 @@ class _Avatar extends ConsumerWidget {
     );
   }
 
-  static Widget _fallback(String name) => Container(
-    decoration: const BoxDecoration(
+  static Widget _fallback(BuildContext context, String name) => Container(
+    decoration: BoxDecoration(
       shape: BoxShape.circle,
-      gradient: LinearGradient(colors: [AppTheme.accent, AppTheme.accentAlt]),
+      gradient: LinearGradient(
+        colors: [context.appColors.accent, context.appColors.accentAlt],
+      ),
     ),
     alignment: Alignment.center,
     child: Text(
@@ -529,6 +529,56 @@ class _Avatar extends ConsumerWidget {
       ),
     ),
   );
+}
+
+/// 资料页背景层。
+///
+/// VRChat 的预设背景（VRC+ 模板）没有公开的模板列表，App 里解析不出图，
+/// 这类就退回页面底色；渐变和自定义贴图能正常显示。
+class _ProfileBackdrop extends ConsumerWidget {
+  const _ProfileBackdrop({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bg = ref.watch(profileBackgroundProvider(userId)).valueOrNull;
+    final canvas = context.appColors.canvas;
+
+    Widget base = ColoredBox(color: canvas);
+
+    if (bg != null && bg.isGradient) {
+      base = DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [bg.topColor!, bg.bottomColor!],
+          ),
+        ),
+        child: const SizedBox.expand(),
+      );
+    } else if (bg != null && bg.isTexture) {
+      base = ColoredBox(
+        color: canvas,
+        child: CachedNetworkImage(
+          imageUrl: bg.textureUrl!,
+          httpHeaders: ref.watch(imageHeadersProvider),
+          fit: BoxFit.cover,
+          errorWidget: (_, _, _) => ColoredBox(color: canvas),
+        ),
+      );
+    }
+
+    // 压一层底色，避免背景太亮影响卡片和文字。
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        base,
+        ColoredBox(color: canvas.withValues(alpha: 0.35)),
+      ],
+    );
+  }
 }
 
 class _StatusBubble extends StatelessWidget {
@@ -545,9 +595,9 @@ class _StatusBubble extends StatelessWidget {
     final bubble = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xE61E2630),
+        color: context.appColors.surfaceHigh.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(AppRadius.sheet),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: context.appColors.ink(0.08)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -563,7 +613,10 @@ class _StatusBubble extends StatelessWidget {
               text,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: AppText.caption, color: Colors.white),
+              style: TextStyle(
+                fontSize: AppText.caption,
+                color: context.appColors.ink(0.9),
+              ),
             ),
           ),
         ],
@@ -681,7 +734,7 @@ class _Identity extends ConsumerWidget {
                     '已验证 18+',
                     style: TextStyle(
                       fontSize: AppText.caption,
-                      color: Colors.white.withValues(alpha: 0.55),
+                      color: context.appColors.ink(0.55),
                     ),
                   ),
                 ],
@@ -696,7 +749,7 @@ class _Identity extends ConsumerWidget {
                     trustRank!,
                     style: TextStyle(
                       fontSize: AppText.caption,
-                      color: Colors.white.withValues(alpha: 0.55),
+                      color: context.appColors.ink(0.55),
                     ),
                   ),
                 ],
@@ -706,7 +759,7 @@ class _Identity extends ConsumerWidget {
                 pronouns,
                 style: TextStyle(
                   fontSize: AppText.caption,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: context.appColors.ink(0.4),
                 ),
               ),
           ],
@@ -716,13 +769,13 @@ class _Identity extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: context.appColors.ink(0.05),
               borderRadius: BorderRadius.circular(AppRadius.field),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.person_pin_circle_outlined, size: 14, color: Colors.white38),
+                Icon(Icons.person_pin_circle_outlined, size: 14, color: context.appColors.ink(0.38)),
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
@@ -731,7 +784,7 @@ class _Identity extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: AppText.caption,
-                      color: Colors.white.withValues(alpha: 0.65),
+                      color: context.appColors.ink(0.65),
                     ),
                   ),
                 ),
@@ -771,7 +824,7 @@ class _Section extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
       decoration: BoxDecoration(
-        color: const Color(0xE6151B23),
+        color: context.appColors.surface.withValues(alpha: 0.93),
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Column(
@@ -781,11 +834,11 @@ class _Section extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: AppText.label,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.8,
-                  color: AppTheme.accent,
+                  color: context.appColors.accent,
                 ),
               ),
               const Spacer(),
@@ -837,7 +890,11 @@ class _ExpandableTextState extends State<_ExpandableText> {
 
   @override
   Widget build(BuildContext context) {
-    const style = TextStyle(fontSize: AppText.secondary, height: 1.65, color: Colors.white70);
+    final style = TextStyle(
+      fontSize: AppText.secondary,
+      height: 1.65,
+      color: context.appColors.ink(0.7),
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -865,10 +922,10 @@ class _ExpandableTextState extends State<_ExpandableText> {
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
                     _expanded ? '收起' : '展开',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: AppText.caption,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.accent,
+                      color: context.appColors.accent,
                     ),
                   ),
                 ),
@@ -894,10 +951,10 @@ class _Badges extends ConsumerWidget {
       width: 58,
       height: 58,
       decoration: BoxDecoration(
-        color: AppTheme.surfaceHigh,
+        color: context.appColors.surfaceHigh,
         borderRadius: BorderRadius.circular(AppRadius.field),
       ),
-      child: const Icon(Icons.workspace_premium, size: 22, color: Colors.white24),
+      child: Icon(Icons.workspace_premium, size: 22, color: context.appColors.ink(0.24)),
     );
 
     return Column(
@@ -936,8 +993,8 @@ class _Badges extends ConsumerWidget {
           OutlinedButton(
             onPressed: () => _showAll(context, headers),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white60,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+              foregroundColor: context.appColors.ink(0.6),
+              side: BorderSide(color: context.appColors.ink(0.12)),
               minimumSize: const Size.fromHeight(36),
               textStyle: const TextStyle(fontSize: AppText.caption),
             ),
@@ -951,7 +1008,7 @@ class _Badges extends ConsumerWidget {
   void _showAll(BuildContext context, Map<String, String> headers) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.appColors.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -996,7 +1053,7 @@ class _Badges extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 10,
-                              color: Colors.white.withValues(alpha: 0.45),
+                              color: context.appColors.ink(0.45),
                             ),
                           ),
                         ),
@@ -1075,14 +1132,14 @@ class _Languages extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
+              color: context.appColors.ink(0.06),
               borderRadius: BorderRadius.circular(AppRadius.card),
             ),
             child: Text(
               label(l),
               style: TextStyle(
                 fontSize: AppText.caption,
-                color: Colors.white.withValues(alpha: 0.7),
+                color: context.appColors.ink(0.7),
               ),
             ),
           ),
@@ -1131,7 +1188,7 @@ class _MyAvatar extends ConsumerWidget {
           imageUrl: imageUrl,
           httpHeaders: ref.watch(imageHeadersProvider),
           fit: BoxFit.cover,
-          errorWidget: (_, _, _) => const ColoredBox(color: AppTheme.surfaceHigh),
+          errorWidget: (_, _, _) => ColoredBox(color: context.appColors.surfaceHigh),
         ),
       ),
     );
@@ -1153,10 +1210,10 @@ class _MyAvatar extends ConsumerWidget {
             children: [
               TextSpan(
                 text: _title(ref),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: AppText.secondary,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: context.appColors.ink(1),
                 ),
               ),
               if ((author ?? '').isNotEmpty)
@@ -1164,7 +1221,7 @@ class _MyAvatar extends ConsumerWidget {
                   text: ' by ${author!}',
                   style: TextStyle(
                     fontSize: AppText.caption,
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: context.appColors.ink(0.4),
                   ),
                 ),
             ],
@@ -1224,7 +1281,7 @@ class _Worlds extends ConsumerWidget {
     if (cards.isEmpty) {
       return Text(
         '还没有公开世界',
-        style: TextStyle(fontSize: AppText.caption, color: Colors.white.withValues(alpha: 0.35)),
+        style: TextStyle(fontSize: AppText.caption, color: context.appColors.ink(0.35)),
       );
     }
 
@@ -1279,7 +1336,7 @@ class _Worlds extends ConsumerWidget {
         '还没有创建或收藏的世界',
         style: TextStyle(
           fontSize: AppText.caption,
-          color: Colors.white.withValues(alpha: 0.35),
+          color: context.appColors.ink(0.35),
         ),
       );
     }
@@ -1310,23 +1367,23 @@ class _WorldFolderCard extends ConsumerWidget {
     final headers = ref.watch(imageHeadersProvider);
     final cover = coverUrl.isEmpty
         ? Container(
-            color: const Color(0xFF1A212B),
-            child: const Icon(Icons.public, size: 22, color: Colors.white24),
+            color: context.appColors.surfaceHigh,
+            child: Icon(Icons.public, size: 22, color: context.appColors.ink(0.24)),
           )
         : CachedNetworkImage(
             imageUrl: coverUrl,
             httpHeaders: headers,
             fit: BoxFit.cover,
             errorWidget: (_, _, _) => Container(
-              color: const Color(0xFF1A212B),
-              child: const Icon(Icons.public, size: 22, color: Colors.white24),
+              color: context.appColors.surfaceHigh,
+              child: Icon(Icons.public, size: 22, color: context.appColors.ink(0.24)),
             ),
           );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A212B),
+        color: context.appColors.surfaceHigh,
         borderRadius: BorderRadius.circular(AppRadius.field),
       ),
       clipBehavior: Clip.antiAlias,
@@ -1347,11 +1404,11 @@ class _WorldFolderCard extends ConsumerWidget {
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: AppText.body,
                           height: 1.25,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: context.appColors.ink(1),
                         ),
                       ),
                       const Spacer(),
@@ -1363,15 +1420,15 @@ class _WorldFolderCard extends ConsumerWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.accent.withValues(alpha: 0.14),
+                            color: context.appColors.accent.withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                           child: Text(
                             '$count',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: AppText.caption,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.accent,
+                              color: context.appColors.accent,
                             ),
                           ),
                         ),
@@ -1453,14 +1510,14 @@ class _WorldCard extends ConsumerWidget {
               Icon(
                 Icons.link,
                 size: 11,
-                color: Colors.white.withValues(alpha: 0.35),
+                color: context.appColors.ink(0.35),
               ),
               const SizedBox(width: 4),
               Text(
                 countText,
                 style: TextStyle(
                   fontSize: AppText.label,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: context.appColors.ink(0.35),
                 ),
               ),
             ],
@@ -1480,8 +1537,11 @@ class _WorldCard extends ConsumerWidget {
     const radius = BorderRadius.all(Radius.circular(8));
 
     if (index >= worlds.length) {
-      return const DecoratedBox(
-        decoration: BoxDecoration(color: Color(0xFF1A212B), borderRadius: radius),
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: context.appColors.surfaceHigh,
+          borderRadius: radius,
+        ),
       );
     }
 
@@ -1492,8 +1552,9 @@ class _WorldCard extends ConsumerWidget {
         imageUrl: w.thumb,
         httpHeaders: headers,
         fit: BoxFit.cover,
-        errorWidget: (_, _, _) =>
-            const DecoratedBox(decoration: BoxDecoration(color: Color(0xFF1A212B))),
+        errorWidget: (_, _, _) => DecoratedBox(
+          decoration: BoxDecoration(color: context.appColors.surfaceHigh),
+        ),
       ),
     );
   }
@@ -1541,8 +1602,8 @@ class _Groups extends ConsumerWidget {
                         ? Container(
                             width: 34,
                             height: 34,
-                            color: AppTheme.surfaceHigh,
-                            child: const Icon(Icons.groups, size: 16, color: Colors.white24),
+                            color: context.appColors.surfaceHigh,
+                            child: Icon(Icons.groups, size: 16, color: context.appColors.ink(0.24)),
                           )
                         : CachedNetworkImage(
                             imageUrl: g.iconUrl!,
@@ -1553,7 +1614,7 @@ class _Groups extends ConsumerWidget {
                             errorWidget: (_, _, _) => Container(
                               width: 34,
                               height: 34,
-                              color: AppTheme.surfaceHigh,
+                              color: context.appColors.surfaceHigh,
                             ),
                           ),
                   ),
@@ -1579,8 +1640,8 @@ class _Groups extends ConsumerWidget {
               MaterialPageRoute<void>(builder: (_) => GroupListPage(userId: userId)),
             ),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white60,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+              foregroundColor: context.appColors.ink(0.6),
+              side: BorderSide(color: context.appColors.ink(0.12)),
               minimumSize: const Size.fromHeight(36),
               textStyle: const TextStyle(fontSize: AppText.caption),
             ),
@@ -1667,9 +1728,9 @@ class _SelfLocationSection extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppTheme.accent.withValues(alpha: 0.08),
+        color: context.appColors.accent.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.25)),
+        border: Border.all(color: context.appColors.accent.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
@@ -1680,12 +1741,12 @@ class _SelfLocationSection extends ConsumerWidget {
               height: 58,
               child: coverUrl.isEmpty
                   ? ColoredBox(
-                      color: AppTheme.surfaceHigh,
+                      color: context.appColors.surfaceHigh,
                       child: Center(
                         child: Icon(
                           Icons.public,
                           size: 20,
-                          color: Colors.white.withValues(alpha: 0.25),
+                          color: context.appColors.ink(0.25),
                         ),
                       ),
                     )
@@ -1693,8 +1754,8 @@ class _SelfLocationSection extends ConsumerWidget {
                       imageUrl: coverUrl,
                       httpHeaders: ref.watch(imageHeadersProvider),
                       fit: BoxFit.cover,
-                      errorWidget: (_, _, _) => const ColoredBox(
-                        color: AppTheme.surfaceHigh,
+                      errorWidget: (_, _, _) => ColoredBox(
+                        color: context.appColors.surfaceHigh,
                       ),
                     ),
             ),
@@ -1710,7 +1771,7 @@ class _SelfLocationSection extends ConsumerWidget {
                     fontSize: AppText.label,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
-                    color: AppTheme.accent,
+                    color: context.appColors.accent,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -1730,7 +1791,7 @@ class _SelfLocationSection extends ConsumerWidget {
                     meta,
                     style: TextStyle(
                       fontSize: AppText.label,
-                      color: Colors.white.withValues(alpha: 0.4),
+                      color: context.appColors.ink(0.4),
                     ),
                   ),
                 ],
@@ -1751,7 +1812,7 @@ class _SelfLocationSection extends ConsumerWidget {
               icon: Icon(
                 Icons.copy_rounded,
                 size: 15,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: context.appColors.ink(0.4),
               ),
             ),
         ],

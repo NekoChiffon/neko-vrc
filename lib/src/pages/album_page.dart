@@ -99,20 +99,23 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
       appBar: AppBar(title: const Text('图库')),
       floatingActionButton: FloatingActionButton(
         onPressed: _uploading ? null : _upload,
-        backgroundColor: AppTheme.accent,
+        backgroundColor: context.appColors.accent,
         child: _uploading
             ? ValueListenableBuilder<double>(
                 valueListenable: _progress,
                 builder: (_, value, _) => Text(
                   '${(value * 100).round()}%',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: AppText.caption,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF0B0F14),
+                    color: Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),
               )
-            : const Icon(Icons.add, color: Color(0xFF0B0F14)),
+            : Icon(
+                Icons.add,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -176,11 +179,11 @@ class _CategoryChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = selected
-        ? AppTheme.accent
-        : Colors.white.withValues(alpha: 0.06);
+        ? context.appColors.accent
+        : context.appColors.ink(0.06);
     final fg = selected
-        ? const Color(0xFF0B0F14)
-        : Colors.white.withValues(alpha: 0.65);
+        ? Theme.of(context).colorScheme.onPrimary
+        : context.appColors.ink(0.65);
 
     return Material(
       color: bg,
@@ -209,8 +212,10 @@ class _CategoryChip extends StatelessWidget {
                     fontSize: AppText.label,
                     fontWeight: FontWeight.w600,
                     color: selected
-                        ? const Color(0xFF0B0F14).withValues(alpha: 0.65)
-                        : Colors.white.withValues(alpha: 0.32),
+                        ? Theme.of(
+                            context,
+                          ).colorScheme.onPrimary.withValues(alpha: 0.65)
+                        : context.appColors.ink(0.32),
                   ),
                 ),
               ],
@@ -253,7 +258,7 @@ class _AlbumGrid extends ConsumerWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: AppText.caption,
-              color: Colors.white.withValues(alpha: 0.4),
+              color: context.appColors.ink(0.4),
             ),
           ),
         ),
@@ -270,14 +275,14 @@ class _AlbumGrid extends ConsumerWidget {
                 Icon(
                   Icons.photo_library_outlined,
                   size: 40,
-                  color: Colors.white.withValues(alpha: 0.14),
+                  color: context.appColors.ink(0.14),
                 ),
                 const SizedBox(height: AppSpace.md),
                 Text(
                   '这个分类还是空的',
                   style: TextStyle(
                     fontSize: AppText.caption,
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: context.appColors.ink(0.4),
                   ),
                 ),
                 if (diag.isNotEmpty) ...[
@@ -290,7 +295,7 @@ class _AlbumGrid extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: AppText.label,
                         height: 1.5,
-                        color: Colors.white.withValues(alpha: 0.3),
+                        color: context.appColors.ink(0.3),
                       ),
                     ),
                   ),
@@ -369,7 +374,7 @@ class _AlbumTileState extends State<_AlbumTile>
   @override
   Widget build(BuildContext context) {
     final image = ColoredBox(
-      color: AppTheme.surfaceHigh,
+      color: context.appColors.surfaceHigh,
       child: CachedNetworkImage(
         imageUrl: widget.file.thumbUrl,
         httpHeaders: widget.headers,
@@ -380,7 +385,7 @@ class _AlbumTileState extends State<_AlbumTile>
           child: Icon(
             Icons.broken_image_outlined,
             size: 18,
-            color: Colors.white.withValues(alpha: 0.2),
+            color: context.appColors.ink(0.2),
           ),
         ),
       ),
@@ -542,7 +547,7 @@ class _AlbumViewer extends ConsumerWidget {
                     errorWidget: (_, _, _) => Text(
                       '图片加载失败',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
+                        color: context.appColors.ink(0.4),
                       ),
                     ),
                   ),
@@ -576,7 +581,7 @@ class _AlbumViewer extends ConsumerWidget {
                           Icon(
                             Icons.public_outlined,
                             size: 14,
-                            color: Colors.white.withValues(alpha: 0.55),
+                            color: context.appColors.ink(0.55),
                           ),
                           const SizedBox(width: 6),
                           Expanded(
@@ -587,7 +592,7 @@ class _AlbumViewer extends ConsumerWidget {
                               style: TextStyle(
                                 fontSize: AppText.secondary,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white.withValues(alpha: 0.85),
+                                color: context.appColors.ink(0.85),
                               ),
                             ),
                           ),
@@ -601,7 +606,7 @@ class _AlbumViewer extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: AppText.label,
-                          color: Colors.white.withValues(alpha: 0.4),
+                          color: context.appColors.ink(0.4),
                         ),
                       ),
                     ],

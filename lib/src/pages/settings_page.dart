@@ -1,14 +1,18 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:vrchat_dart/vrchat_dart.dart';
 
 import '../core/app_info.dart';
 import '../models/friend_presence.dart';
+import '../providers/appearance.dart';
+import '../providers/discovery_provider.dart';
 import '../providers/friends_provider.dart';
 import '../providers/saved_account.dart';
 import '../services/friend_notifier.dart';
 import '../theme.dart';
-import 'cosmetics_picker_page.dart';
+import '../widgets/frosted_app_bar.dart';
 import 'favorites_page.dart';
 import 'notifications_page.dart';
 
@@ -26,11 +30,35 @@ class SettingsPage extends ConsumerWidget {
         ? accounts
         : accounts.where((a) => a.userId != me.id).toList();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('设置')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 32),
-        children: [
+    final list = ListView(
+      // 顶部让出毛玻璃顶栏的高度。
+      padding: EdgeInsets.fromLTRB(
+        14,
+        frostedAppBarInset(context) + 8,
+        14,
+        32,
+      ),
+      children: [
+          // ---- 外观 ----
+          _Card(
+            title: '外观',
+            children: [
+              const SizedBox(height: 2),
+              SegmentedButton<ThemeMode>(
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(value: ThemeMode.system, label: Text('跟随系统')),
+                  ButtonSegment(value: ThemeMode.dark, label: Text('深色')),
+                  ButtonSegment(value: ThemeMode.light, label: Text('浅色')),
+                ],
+                selected: {ref.watch(appearanceProvider)},
+                onSelectionChanged: (selection) {
+                  ref.read(appearanceProvider.notifier).setMode(selection.first);
+                },
+              ),
+              const SizedBox(height: 4),
+            ],
+          ),
           // ---- 账号 ----
           _Card(
             title: '账号',
@@ -48,9 +76,9 @@ class SettingsPage extends ConsumerWidget {
                       _showAccountSwitcher(context, ref, otherAccounts),
                   icon: const Icon(Icons.swap_horiz, size: 18),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.accent,
+                    foregroundColor: context.appColors.accent,
                     side: BorderSide(
-                      color: AppTheme.accent.withValues(alpha: 0.35),
+                      color: context.appColors.accent.withValues(alpha: 0.35),
                     ),
                     minimumSize: const Size.fromHeight(44),
                   ),
@@ -75,26 +103,85 @@ class SettingsPage extends ConsumerWidget {
           _Card(
             title: '提醒',
             children: [
-              ValueListenableBuilder<bool>(
-                valueListenable: FriendNotifier.instance.enabled,
-                builder: (context, enabled, _) => SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: enabled,
-                  onChanged: (v) => _toggleFriendNotify(context, v),
-                  title: const Text(
-                    '好友上线提醒',
-                    style: TextStyle(fontSize: AppText.secondary),
-                  ),
-                  subtitle: Text(
-                    '好友进入 VRChat 时弹一条系统通知。\n'
-                    '只在 App 运行时生效；Web 端上下线不提醒。',
+              ValueListenableBuilder<NotifySettings>(
+                valueListenable: FriendNotifier.instance.settings,
+                builder: (context, s, _) {
+                  Widget hint(String text) => Text(
+                    text,
                     style: TextStyle(
                       fontSize: AppText.label,
                       height: 1.5,
-                      color: Colors.white.withValues(alpha: 0.3),
+                      color: context.appColors.ink(0.3),
                     ),
-                  ),
-                ),
+                  );
+                  Widget switchRow({
+                    required String title,
+                    required String subtitle,
+                    required bool value,
+                    required Future<void> Function() apply,
+                  }) {
+                    return SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: value,
+                      onChanged: (v) => _toggleSetting(context, v, apply),
+                      title: Text(
+                        title,
+                        style: const TextStyle(fontSize: AppText.secondary),
+                      ),
+                      subtitle: hint(subtitle),
+                    );
+                  }
+
+                  return Column(
+                    children: [
+                      switchRow(
+                        title: '上线提醒',
+                        subtitle: '好友进入 VRChat 时提醒',
+                        value: s.online,
+                        apply: () => FriendNotifier.instance.setOnline(!s.online),
+                      ),
+                      switchRow(
+                        title: '下线提醒',
+                        subtitle: '好友离开 VRChat 时提醒',
+                        value: s.offline,
+                        apply: () =>
+                            FriendNotifier.instance.setOffline(!s.offline),
+                      ),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        onTap: () => _showReminderScope(context, ref),
+                        title: const Text(
+                          '提醒范围',
+                          style: TextStyle(fontSize: AppText.secondary),
+                        ),
+                        subtitle: hint(_scopeLabel(s)),
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          size: 20,
+                          color: context.appColors.ink(0.35),
+                        ),
+                      ),
+                      switchRow(
+                        title: '好友申请提醒',
+                        subtitle: '收到新的好友请求时提醒',
+                        value: s.friendRequest,
+                        apply: () =>
+                            FriendNotifier.instance.setFriendRequest(!s.friendRequest),
+                      ),
+                      switchRow(
+                        title: 'VRChat 服务状态提醒',
+                        subtitle: '官方服务异常或恢复正常时提醒',
+                        value: s.serviceStatus,
+                        apply: () => FriendNotifier.instance
+                            .setServiceStatus(!s.serviceStatus),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: hint('只在 App 运行时生效；Web 端上下线不提醒。'),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -119,7 +206,7 @@ class SettingsPage extends ConsumerWidget {
                 value: friends.lastEventAt == null
                     ? '等待推送'
                     : '${_hhmm(friends.lastEventAt!)} 有推送',
-                valueColor: friends.pipelineAlive ? const Color(0xFF4ADE80) : Colors.white38,
+                valueColor: friends.pipelineAlive ? const Color(0xFF4ADE80) : context.appColors.ink(0.38),
               ),
               if (!friends.pipelineAlive) ...[
                 const SizedBox(height: 4),
@@ -130,7 +217,7 @@ class SettingsPage extends ConsumerWidget {
                     icon: const Icon(Icons.refresh, size: 15),
                     label: const Text('重连实时通道', style: TextStyle(fontSize: AppText.caption)),
                     style: TextButton.styleFrom(
-                      foregroundColor: AppTheme.accent,
+                      foregroundColor: context.appColors.accent,
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -145,18 +232,6 @@ class SettingsPage extends ConsumerWidget {
           _Card(
             title: '快捷',
             children: [
-              _Entry(
-                icon: Icons.auto_awesome,
-                label: '个人资料装饰',
-                hint: '头像框、名字牌、资料特效',
-                onTap: me == null
-                    ? null
-                    : () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => CosmeticsPickerPage(userId: me.id),
-                          ),
-                        ),
-              ),
               _Entry(
                 icon: Icons.star_border,
                 label: '收藏的世界',
@@ -185,23 +260,52 @@ class SettingsPage extends ConsumerWidget {
                 value: 'api.vrchat.cloud',
               ),
               const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => _openGithub(context),
+                icon: const Icon(Icons.code, size: 18),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.appColors.ink(0.8),
+                  side: BorderSide(color: context.appColors.ink(0.14)),
+                  minimumSize: const Size.fromHeight(44),
+                ),
+                label: const Text('关于 APP · GitHub 项目主页'),
+              ),
+              const SizedBox(height: 10),
               Text(
                 '个人学习用途的非官方客户端，与 VRChat Inc. 无关。\n'
                 '请遵守 VRChat 的 API 使用规范：不要高频轮询、不要滥用接口。',
                 style: TextStyle(
                   fontSize: AppText.label,
                   height: 1.7,
-                  color: Colors.white.withValues(alpha: 0.25),
+                  color: context.appColors.ink(0.25),
                 ),
               ),
             ],
+          ),
+        ],
+    );
+
+    // 列表和顶栏放进同一个 Stack，滚动时列表会从毛玻璃下面经过。
+    return Scaffold(
+      body: Stack(
+        children: [
+          list,
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: const FrostedAppBar(title: Text('设置')),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _toggleFriendNotify(BuildContext context, bool value) async {
+  Future<void> _toggleSetting(
+    BuildContext context,
+    bool value,
+    Future<void> Function() apply,
+  ) async {
     if (value) {
       final granted = await FriendNotifier.instance.requestPermission();
       if (!granted) {
@@ -211,7 +315,240 @@ class SettingsPage extends ConsumerWidget {
         return;
       }
     }
-    await FriendNotifier.instance.setEnabled(value);
+    await apply();
+  }
+
+  String _scopeLabel(NotifySettings s) => switch (s.scope) {
+        NotifyScope.all => '全部好友',
+        NotifyScope.groups => s.groupNames.isEmpty
+            ? '仅好友收藏分组（尚未选择）'
+            : '仅好友收藏分组（已选 ${s.groupNames.length} 个）',
+        NotifyScope.selected => s.userIds.isEmpty
+            ? '仅指定好友（尚未选择）'
+            : '仅指定好友（已选 ${s.userIds.length} 位）',
+      };
+
+  /// 提醒范围：全部好友 / 收藏分组 / 指定好友。
+  Future<void> _showReminderScope(BuildContext context, WidgetRef ref) async {
+    final current = FriendNotifier.instance.settings.value;
+    var scope = current.scope;
+    final groups = <String>{...current.groupNames};
+    final users = <String>{...current.userIds};
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.appColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          final favGroups = ref.watch(friendFavoriteGroupsProvider).valueOrNull ??
+              const <FavoriteGroup>[];
+          final friends = [...ref.watch(friendsProvider).friends]
+            ..sort((a, b) => a.displayName
+                .toLowerCase()
+                .compareTo(b.displayName.toLowerCase()));
+
+          Widget radio(NotifyScope value, String title) {
+            final selected = scope == value;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              onTap: () => setSheet(() => scope = value),
+              leading: Icon(
+                selected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_off,
+                size: 20,
+                color: selected
+                    ? ctx.appColors.accent
+                    : ctx.appColors.ink(0.35),
+              ),
+              title: Text(
+                title,
+                style: const TextStyle(fontSize: AppText.secondary),
+              ),
+            );
+          }
+
+          Widget emptyHint(String text) => Center(
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: AppText.caption,
+                    color: ctx.appColors.ink(0.35),
+                  ),
+                ),
+              );
+
+          final imageHeaders = ref.watch(imageHeadersProvider);
+
+          Widget avatar(FriendPresence friend) {
+            const size = 34.0;
+            final fallback = Container(
+              width: size,
+              height: size,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: ctx.appColors.surfaceHigh,
+              ),
+              child: Text(
+                friend.displayName.isEmpty
+                    ? '?'
+                    : friend.displayName.substring(0, 1).toUpperCase(),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: ctx.appColors.ink(0.6),
+                ),
+              ),
+            );
+            final url = friend.avatarUrl;
+            return SizedBox(
+              width: size,
+              height: size,
+              child: ClipOval(
+                child: url == null || url.isEmpty
+                    ? fallback
+                    : CachedNetworkImage(
+                        imageUrl: url,
+                        httpHeaders: imageHeaders,
+                        fit: BoxFit.cover,
+                        placeholder: (_, _) => fallback,
+                        errorWidget: (_, _, _) => fallback,
+                      ),
+              ),
+            );
+          }
+
+          return SafeArea(
+            top: false,
+            child: SizedBox(
+              height: MediaQuery.sizeOf(ctx).height * 0.72,
+              // 统一左右内边距，别让内容贴着屏幕边框。
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 18, bottom: 4),
+                      child: Text(
+                        '提醒范围',
+                        style: TextStyle(
+                          fontSize: AppText.title,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    radio(NotifyScope.all, '全部好友'),
+                    radio(NotifyScope.groups, '仅好友收藏分组'),
+                    if (scope == NotifyScope.groups)
+                      Expanded(
+                        child: favGroups.isEmpty
+                            ? emptyHint('还没有好友收藏夹')
+                            : ListView(
+                                padding: EdgeInsets.zero,
+                                children: [
+                                  for (final g in favGroups)
+                                    CheckboxListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      dense: true,
+                                      value: groups.contains(g.name),
+                                      onChanged: (v) => setSheet(() {
+                                        if (v == true) {
+                                          groups.add(g.name);
+                                        } else {
+                                          groups.remove(g.name);
+                                        }
+                                      }),
+                                      title: Text(
+                                        favoriteGroupLabel(g),
+                                        style: const TextStyle(
+                                          fontSize: AppText.secondary,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                      ),
+                    radio(NotifyScope.selected, '仅指定好友'),
+                    if (scope == NotifyScope.selected)
+                      Expanded(
+                        child: friends.isEmpty
+                            ? emptyHint('好友列表还没加载出来')
+                            : ListView(
+                                padding: EdgeInsets.zero,
+                                children: [
+                                  for (final f in friends)
+                                    ListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      dense: true,
+                                      leading: avatar(f),
+                                      trailing: Checkbox(
+                                        value: users.contains(f.userId),
+                                        onChanged: (v) => setSheet(() {
+                                          if (v == true) {
+                                            users.add(f.userId);
+                                          } else {
+                                            users.remove(f.userId);
+                                          }
+                                        }),
+                                      ),
+                                      onTap: () => setSheet(() {
+                                        if (!users.remove(f.userId)) {
+                                          users.add(f.userId);
+                                        }
+                                      }),
+                                      title: Text(
+                                        f.displayName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: AppText.secondary,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 12),
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('完成'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    await FriendNotifier.instance.update(
+      current.copyWith(
+        scope: scope,
+        groupNames: groups.toList(),
+        userIds: users.toList(),
+      ),
+    );
+  }
+
+  Future<void> _openGithub(BuildContext context) async {
+    const url = 'https://github.com/NekoChiffon/neko-vrc';
+    final ok = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!ok && context.mounted) {
+      _toast(context, '打不开浏览器，请手动访问 github.com/NekoChiffon/neko-vrc');
+    }
   }
 
   /// 已保存的账号列表，点一下切换到那个账号。
@@ -226,7 +563,7 @@ class SettingsPage extends ConsumerWidget {
     final headers = ref.read(imageHeadersProvider);
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppTheme.surface,
+      backgroundColor: context.appColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -240,15 +577,15 @@ class SettingsPage extends ConsumerWidget {
               height: 4,
               margin: const EdgeInsets.only(top: 10, bottom: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: context.appColors.ink(0.15),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Padding(
+            Padding(
               padding: EdgeInsets.fromLTRB(20, 4, 20, 8),
               child: Row(
                 children: [
-                  Icon(Icons.swap_horiz, size: 16, color: AppTheme.accent),
+                  Icon(Icons.swap_horiz, size: 16, color: context.appColors.accent),
                   SizedBox(width: 8),
                   Text(
                     '切换到其他账号',
@@ -298,18 +635,18 @@ class SettingsPage extends ConsumerWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: AppText.label,
-                                  color: Colors.white.withValues(alpha: 0.35),
+                                  color: context.appColors.ink(0.35),
                                 ),
                               ),
                             ],
                           ],
                         ),
                       ),
-                      const Text(
+                      Text(
                         '切换',
                         style: TextStyle(
                           fontSize: AppText.caption,
-                          color: AppTheme.accent,
+                          color: context.appColors.accent,
                         ),
                       ),
                     ],
@@ -380,11 +717,11 @@ class _AccountAvatar extends StatelessWidget {
     final fallback = Container(
       width: _size,
       height: _size,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppTheme.surfaceHigh,
+        color: context.appColors.surfaceHigh,
       ),
-      child: const Icon(Icons.person, size: 18, color: Colors.white24),
+      child: Icon(Icons.person, size: 18, color: context.appColors.ink(0.24)),
     );
 
     if (account.avatarUrl.isEmpty) return fallback;
@@ -413,7 +750,7 @@ class _Card extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
       decoration: BoxDecoration(
-        color: const Color(0xE6151B23),
+        color: context.appColors.surface.withValues(alpha: 0.93),
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Column(
@@ -421,11 +758,11 @@ class _Card extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: AppText.label,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.8,
-              color: AppTheme.accent,
+              color: context.appColors.accent,
             ),
           ),
           const SizedBox(height: 8),
@@ -455,7 +792,7 @@ class _Row extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
       child: Row(
         children: [
-          Icon(icon, size: 15, color: Colors.white.withValues(alpha: 0.4)),
+          Icon(icon, size: 15, color: context.appColors.ink(0.4)),
           const SizedBox(width: 9),
           Flexible(
             child: Text(
@@ -464,14 +801,14 @@ class _Row extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: AppText.caption,
-                color: Colors.white.withValues(alpha: 0.55),
+                color: context.appColors.ink(0.55),
               ),
             ),
           ),
           const Spacer(),
           Text(
             value,
-            style: TextStyle(fontSize: AppText.caption, color: valueColor ?? Colors.white70),
+            style: TextStyle(fontSize: AppText.caption, color: valueColor ?? context.appColors.ink(0.7)),
           ),
         ],
       ),
@@ -484,13 +821,11 @@ class _Entry extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.hint,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
-  final String? hint;
 
   @override
   Widget build(BuildContext context) {
@@ -501,7 +836,7 @@ class _Entry extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 2),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: Colors.white.withValues(alpha: 0.45)),
+            Icon(icon, size: 16, color: context.appColors.ink(0.45)),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -512,27 +847,17 @@ class _Entry extends StatelessWidget {
                     style: TextStyle(
                       fontSize: AppText.secondary,
                       color: onTap == null
-                          ? Colors.white24
-                          : Colors.white70,
+                          ? context.appColors.ink(0.24)
+                          : context.appColors.ink(0.7),
                     ),
                   ),
-                  if (hint != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      hint!,
-                      style: TextStyle(
-                        fontSize: AppText.label,
-                        color: Colors.white.withValues(alpha: 0.28),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
             Icon(
               Icons.chevron_right,
               size: 18,
-              color: Colors.white.withValues(alpha: 0.2),
+              color: context.appColors.ink(0.2),
             ),
           ],
         ),
